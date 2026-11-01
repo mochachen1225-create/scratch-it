@@ -126,5 +126,7 @@ const FX = {
   },
   // 送貓窩被無視：洩氣的下降音
   sad() { [392, 370, 349, 262].forEach((f, i) => this.tone(f, i === 3 ? 0.6 : 0.28, { type: "triangle", vol: 0.13, at: i * 0.3, to: i === 3 ? 230 : null })); },
+  // 整人卡：低低的「噗～」
+  pfft() { this.tone(110, 0.45, { type: "sawtooth", vol: 0.1, to: 70 }); this.burst(0.4, 500, 160, 0.4, "lowpass"); },
   vibrate(ms) { if (!this.muted && navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
 };

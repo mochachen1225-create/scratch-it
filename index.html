@@ -128,6 +128,16 @@
   .bagitem { display: flex; align-items: center; gap: 10px; background: var(--sheet); border: 2.5px solid var(--ink); border-radius: 14px; padding: 6px 10px; box-shadow: 2px 2px 0 var(--ink); }
   .bagitem img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
   .bagitem span { flex: 1; font-size: 16px; } .bagitem .btn { width: auto; font-size: 16px; padding: 8px 14px; }
+  /* 閃亮版：彩虹光掃過 */
+  .pic { position: relative; display: block; width: 100%; overflow: hidden; border-radius: 10px; }
+  #reveal .pic { width: 84px; flex: none; }
+  .pic.shiny::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light;
+    background: linear-gradient(115deg, transparent 20%, rgba(255,120,200,.9) 35%, rgba(255,240,120,.9) 45%, rgba(120,230,255,.9) 55%, transparent 70%); background-size: 250% 100%; animation: foil 2.2s linear infinite; }
+  .slot.shiny { box-shadow: 0 0 0 2px #fff, 0 0 12px 3px #ffd96a, 2px 2px 0 var(--ink); }
+  @keyframes foil { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+  .slot em { position: absolute; top: 6px; right: 6px; font-style: normal; font-size: 12px; background: var(--ink); color: #fff; border-radius: 8px; padding: 0 5px; }
+  #cv.shake { animation: shake .5s; }
+  @keyframes shake { 20% { transform: translate(-6px, 2px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-4px, 3px); } 80% { transform: translate(3px, -1px); } }
   #finish { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(253,243,227,.55); }
   #finish svg { width: 220px; height: 220px; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
   #finish p { font-size: 26px; margin: 4px 0 0; animation: purr 0.5s ease-in-out infinite alternate; }
@@ -219,16 +229,16 @@
 </section>
 
 <div id="reveal" hidden></div>
-<div id="viewer" class="overlay" hidden><div class="card"><img id="viewerImg" alt=""><p id="viewerTxt" style="margin:0;font-size:17px"></p><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
+<div id="viewer" class="overlay" hidden><div class="card"><span id="viewerPic" class="pic"><img id="viewerImg" alt=""></span><p id="viewerTxt" style="margin:0;font-size:17px;white-space:pre-line"></p><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
 <div id="unlockPop" class="overlay" hidden><div class="card"><div id="unlockIc" class="unlock-ic"></div><p id="unlockTxt" style="margin:0;font-size:20px"></p><button id="unlockOk" class="btn" data-t>太好了！</button></div></div>
 <div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.4.0"></script>
-<script src="js/i18n.en.js?v=0.4.0"></script>
-<script src="js/data.js?v=0.4.0"></script>
-<script src="js/cats.js?v=0.4.0"></script>
-<script src="js/fx.js?v=0.4.0"></script>
-<script src="js/game.js?v=0.4.0"></script>
+<script src="js/i18n.js?v=0.4.1"></script>
+<script src="js/i18n.en.js?v=0.4.1"></script>
+<script src="js/data.js?v=0.4.1"></script>
+<script src="js/cats.js?v=0.4.1"></script>
+<script src="js/fx.js?v=0.4.1"></script>
+<script src="js/game.js?v=0.4.1"></script>
 </body>
 </html>

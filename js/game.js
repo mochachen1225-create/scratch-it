@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.4.0";
+const VERSION = "0.4.1";
 const CHANGES = [
+  "同一張卡找到 3 次會變閃亮版；整人卡會噗一聲",
   "刮刮卡收集：每張紙下面藏一張驚喜插畫，抓開就收進收集冊（12 張＋全收集獎勵）",
   "找到的寶物可以送給貓咪",
   "跳舞時點貓會喵一聲跳更高；肉球章蓋滿 30 個變成大愛心",
@@ -345,11 +346,18 @@ function checkReveal() {
   if (!G.card || G.found || G.picHit < G.picTot * REVEAL_AT) return;
   G.found = true;
   const cd = G.card, r = RARITY[cd.rarity], el = $("#reveal");
-  el.innerHTML = `<img src="${cardImg(cd.id)}" alt=""><div><b>${T(cd.say)}</b><small style="background:${r.color}">${r.stars} ${T(r.name)}${save.found[cd.id] ? "" : "・" + T("新卡片！")}</small></div>`;
+  // 同一張卡第 3 次找到：解鎖閃亮版
+  const n = save.found[cd.id] || 0, tag = !n ? "・" + T("新卡片！") : n + 1 === SHINY_AT ? "・" + T("✨ 閃亮版解鎖！") : "";
+  el.innerHTML = `<span class="pic${n + 1 >= SHINY_AT ? " shiny" : ""}"><img src="${cardImg(cd.id)}" alt=""></span><div><b>${T(cd.say)}</b><small style="background:${r.color}">${r.stars} ${T(r.name)}${tag}</small></div>`;
   el.hidden = false; el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
   clearTimeout(el._t); el._t = setTimeout(() => { el.hidden = true; }, 2800);
   FX.reveal(cd.rarity); FX.vibrate([20, 40, 20]);
+  // 整人卡：噗一聲、畫面抖一下
+  if (cd.kind === "prank") {
+    setTimeout(() => { FX.pfft(); FX.vibrate([60, 30, 90]); cv.classList.add("shake"); setTimeout(() => cv.classList.remove("shake"), 500); }, 350);
+  }
 }
+const SHINY_AT = 3;
 function drawMotif(c, m) {
   const sofa = m.id === "sofa";
   const fill = sofa ? "#ffc7d4" : "#e9c27f", line = sofa ? "#e58fa5" : "#6b4a26";
@@ -919,9 +927,9 @@ function openBook() {
   const box = $("#book"); box.innerHTML = "";
   for (const cd of CARDS) {
     const n = save.found[cd.id] || 0, r = RARITY[cd.rarity];
-    const el = document.createElement("button"); el.className = "slot" + (n ? "" : " unk");
+    const el = document.createElement("button"); el.className = "slot" + (n ? "" : " unk") + (n >= SHINY_AT ? " shiny" : "");
     el.style.background = r.color;
-    el.innerHTML = `<img src="${cardImg(cd.id)}" alt="">${n ? "" : "<i>？</i>"}<span>${n ? W(cd.name) : r.stars}</span>`;
+    el.innerHTML = `<span class="pic"><img src="${cardImg(cd.id)}" alt=""></span>${n ? "" : "<i>？</i>"}${n > 1 ? `<em>×${n}</em>` : ""}<span>${n ? W(cd.name) : r.stars}</span>`;
     el.addEventListener("click", () => { FX.tap(); if (n) showCard(cd); else toast(T("還沒找到：{0} {1}", T(r.name), r.stars)); });
     box.appendChild(el);
   }
@@ -935,7 +943,10 @@ function openBook() {
 }
 function showCard(cd, reward) {
   $("#viewerImg").src = cardImg(cd.id);
-  $("#viewerTxt").textContent = reward ? T("🎉 全收集獎勵！謝謝你陪三隻貓抓了這麼多") : `${RARITY[cd.rarity].stars} ${T(RARITY[cd.rarity].name)}・${T(cd.say)}`;
+  const n = save.found[cd.id] || 0, shiny = !reward && n >= SHINY_AT;
+  $("#viewerPic").classList.toggle("shiny", shiny);
+  $("#viewerTxt").textContent = reward ? T("🎉 全收集獎勵！謝謝你陪三隻貓抓了這麼多")
+    : `${RARITY[cd.rarity].stars} ${T(RARITY[cd.rarity].name)}・${T(cd.say)}` + (shiny ? `\n✨ ${T("閃亮版")}` : `\n${T("找到 {0} 次（{1} 次變閃亮版）", n, SHINY_AT)}`);
   $("#viewer").hidden = false;
 }
 function renderBag() {
@@ -1029,7 +1040,7 @@ function openAlbum() {
   const box = $("#album"); box.innerHTML = "";
   save.album.forEach(a => {
     const im = document.createElement("img"); im.src = a.img; im.alt = a.title;
-    im.addEventListener("click", () => { $("#viewerImg").src = a.img; $("#viewerTxt").textContent = ""; $("#viewer").hidden = false; FX.tap(); });
+    im.addEventListener("click", () => { $("#viewerImg").src = a.img; $("#viewerTxt").textContent = ""; $("#viewerPic").classList.remove("shiny"); $("#viewer").hidden = false; FX.tap(); });
     box.appendChild(im);
   });
   $("#albumEmpty").hidden = save.album.length > 0;
