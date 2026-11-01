@@ -55,6 +55,14 @@ const FX = {
   rip() { this.burst(0.28, 3000, 500, 0.5); },           // 打洞：嘶啦
   boing() { this.tone(180, 0.35, { type: "triangle", vol: 0.18, to: 520 }); this.tone(520, 0.3, { type: "triangle", vol: 0.12, at: 0.25, to: 260 }); },
   tap() { this.tone(600, 0.06, { type: "triangle", vol: 0.08 }); },
+  // 一整塊碎掉的「啵」：連鎖越多聲音越高
+  pop(chain = 0) {
+    const f = 520 * Math.pow(1.12, Math.min(chain, 8));
+    this.tone(f, 0.13, { type: "sine", vol: 0.2, to: f / 2.6 }); this.burst(0.09, 2600, 900, 0.25);
+  },
+  // 泡泡紙的小泡泡
+  popSmall() { const f = 700 + Math.random() * 500; this.tone(f, 0.05, { type: "triangle", vol: 0.12, to: f / 3 }); this.click(0.08); },
+  plop() { this.tone(240, 0.18, { type: "sine", vol: 0.18, to: 90 }); this.burst(0.25, 1200, 300, 0.3); },
   sneeze() { this.tone(900, 0.08, { type: "square", vol: 0.06, to: 1400 }); this.burst(0.35, 2000, 600, 0.45); },
   unlockChime() { [659, 784, 988, 1319].forEach((f, i) => this.tone(f, 0.25, { type: "triangle", vol: 0.13, at: i * 0.1 })); },
   // 呼嚕聲：低頻噪音，每秒開關 24 次左右

@@ -26,13 +26,17 @@ const CATS = {
 const MATERIALS = [
   { id: "cardboard", name: "瓦楞紙貓抓板", icon: "📦", ready: true, unlock: null,
     base: "#d9b483", base2: "#c79d66", groove: "#8a6236", fuzz: "#f6e2bd", hole: "#2e2116",
-    holeAt: 11, debris: "strip", sound: { type: "bandpass", freq: 2600, q: 1.1, crackle: 0.5, gain: 0.5 } },
+    under: "#a8773f", mode: "hex", debris: "strip", sound: { type: "bandpass", freq: 2600, q: 1.1, crackle: 0.5, gain: 0.5 } },
   { id: "sofa", name: "沙發", icon: "🛋️", ready: true, unlock: { type: "paintings", n: 3 },
     base: "#5f9e96", base2: "#4f8a83", groove: "#3f6f69", fuzz: "#e9f3f1", hole: "#fff7ea",
-    holeAt: 13, debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
+    under: "#fff7ea", mode: "hex", debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
+  // 泡泡紙：一格格小泡泡，抓過去連續啵啵啵
+  { id: "bubble", name: "泡泡紙", icon: "🫧", ready: true, unlock: { type: "totalHoles", n: 3000 },
+    base: "#d9ecf7", base2: "#bcd9ec", groove: "#a9cbe0", fuzz: "#ffffff", hole: "#eef7fc",
+    mode: "bubble", debris: "plastic", sound: { type: "highpass", freq: 1800, q: 0.7, crackle: 0, gain: 0.3 } },
   { id: "castle", name: "紙箱城堡", icon: "🏰", ready: false, unlock: { type: "allcats" } },
   { id: "rug", name: "長毛地毯", icon: "🧶", ready: false, unlock: { type: "time", n: 300 } },
-  { id: "curtain", name: "窗簾", icon: "🪟", ready: false, unlock: { type: "holes", n: 20 } },
+  { id: "curtain", name: "窗簾", icon: "🪟", ready: false, unlock: { type: "holes", n: 1500 } },
   { id: "tissue", name: "衛生紙捲", icon: "🧻", ready: false, unlock: { type: "frenzy", n: 10 }, secret: true },
   { id: "xmas", name: "聖誕禮物紙箱", icon: "🎁", ready: false, unlock: { type: "paintingsOrDecember", n: 10 } }
 ];
@@ -42,7 +46,8 @@ const UNLOCK_TEXT = {
   paintings: "抓完 {0} 張畫",
   allcats: "三隻貓都各抓過一次",
   time: "累積抓滿 {0} 分鐘",
-  holes: "一張畫抓出 {0} 個洞",
+  holes: "一張畫打出 {0} 個洞",
+  totalHoles: "累積打 {0} 個洞",
   frenzy: "？？？",
   paintingsOrDecember: "12 月限定，或抓完 {0} 張畫"
 };
@@ -53,7 +58,16 @@ const ART_STYLES = {
   cheese: "瑞士起司派",
   blank: "留白大師",
   minimal: "極簡主義",
-  impression: "印象派"
+  impression: "印象派",
+  chain: "連鎖大師"
+};
+
+// AI 插畫（Katie 用 Gemini App 生成）。window.NO_ART = true 時全部改用程式畫的版本
+const ART = window.NO_ART ? null : {
+  orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp" },
+  grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp" },
+  white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp" },
+  flutes: "art/tex_flutes.jpg"
 };
 
 const GAME_URL_DEFAULT = "https://mochachen1225-create.github.io/scratch-it/";
