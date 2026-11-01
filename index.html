@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#fdf3e3">
+<title>抓爛它！</title>
+<meta name="description" content="療癒解壓的手機網頁小遊戲：手指一滑，貓爪把紙抓爛，抓痕就是你的作品。">
+<meta property="og:title" content="抓爛它！ Scratch It!">
+<meta property="og:description" content="手指一滑，貓爪把紙抓爛，抓痕就是你的作品。Swipe to scratch. The mess is your masterpiece.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #3a2e2a; --paper: #fdf3e3; --sheet: #fffaf2; --yellow: #ffd96a; --pink: #ffb8c6; --mint: #a9e5c6; --blue: #aed5ff; --muted: #8a7a72; --brown: #c9965a; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Huninn", "PingFang TC", "Noto Sans TC", system-ui, sans-serif; color: var(--ink);
+    background: var(--paper); background-image: radial-gradient(#ead8bd 1.2px, transparent 1.4px); background-size: 22px 22px;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; touch-action: manipulation;
+  }
+  button { font-family: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  .screen { display: none; min-height: 100vh; min-height: 100dvh; max-width: 480px; margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)); flex-direction: column; align-items: center; gap: 14px; }
+  .screen.active { display: flex; }
+  .btn { display: block; width: 100%; max-width: 340px; font-size: 21px; font-weight: 700; padding: 14px 20px; border: 3px solid var(--ink);
+    border-radius: 22px; background: var(--yellow); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; text-align: center; text-decoration: none; transition: transform .08s, box-shadow .08s; }
+  .btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn:disabled { opacity: .45; }
+  .btn-pink { background: var(--pink); } .btn-mint { background: var(--mint); } .btn-blue { background: var(--blue); } .btn-ghost { background: var(--sheet); }
+  .row2 { display: flex; gap: 10px; width: 100%; max-width: 340px; } .row2 .btn { font-size: 18px; padding: 12px 6px; }
+  .linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: 15px; cursor: pointer; padding: 4px; }
+  .small { font-size: 14px; color: var(--muted); margin: 0; text-align: center; }
+  .label { font-size: 15px; color: var(--muted); align-self: flex-start; margin: 4px 0 -6px 4px; }
+  .mute { position: fixed; z-index: 60; top: max(10px, env(safe-area-inset-top)); right: 10px; width: 44px; height: 44px; border-radius: 50%;
+    font-size: 20px; border: 2.5px solid var(--ink); background: var(--sheet); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; padding: 0; }
+
+  /* 首頁 */
+  .title { margin: 14px 0 0; font-size: 58px; line-height: 1; letter-spacing: 2px; transform: rotate(-3deg); text-shadow: 4px 4px 0 var(--yellow); }
+  .tagline { margin: 0; color: var(--muted); font-size: 17px; }
+  .cats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+  .cat { border: 3px solid var(--ink); border-radius: 18px; background: var(--sheet); box-shadow: 3px 3px 0 var(--ink); padding: 6px 4px 8px;
+    display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform .1s; }
+  .cat svg { width: 78px; height: 78px; }
+  .cat b { font-size: 17px; } .cat small { font-size: 13px; color: var(--muted); }
+  .cat.on { background: var(--yellow); transform: translateY(-3px); }
+  .mats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; }
+  .mat { border: 2.5px solid var(--ink); border-radius: 14px; background: var(--sheet); padding: 8px 10px; text-align: left; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; min-height: 56px; box-shadow: 2px 2px 0 var(--ink); }
+  .mat .ic { font-size: 26px; } .mat .nm { font-size: 16px; font-weight: 700; line-height: 1.15; } .mat .cd { font-size: 12px; color: var(--muted); line-height: 1.2; }
+  .mat.on { background: var(--mint); }
+  .mat.locked { opacity: .62; background: #efe6d8; cursor: default; }
+  .bar { height: 5px; background: #e1d4c1; border-radius: 3px; margin-top: 3px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--brown); }
+  .foot { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 14px; }
+
+  /* 抓的畫面 */
+  #play { padding: 0; max-width: none; }
+  #cv { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; display: block; }
+  #paw { position: fixed; width: 54px; height: 63px; pointer-events: none; z-index: 10; transform: translate(-50%, -30%) rotate(-8deg); filter: drop-shadow(2px 3px 0 rgba(0,0,0,.2)); }
+  .hud { position: fixed; z-index: 20; top: max(10px, env(safe-area-inset-top)); left: 10px; right: 64px; display: flex; align-items: center; gap: 8px; pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+  .chip { display: flex; align-items: center; gap: 4px; background: var(--sheet); border: 2.5px solid var(--ink); border-radius: 16px; padding: 2px 8px 2px 2px; font-size: 14px; box-shadow: 2px 2px 0 var(--ink); }
+  .chip svg { width: 34px; height: 34px; }
+  .meter { flex: 1; height: 26px; border: 2.5px solid var(--ink); border-radius: 13px; background: var(--sheet); overflow: hidden; position: relative; box-shadow: 2px 2px 0 var(--ink); }
+  .meter i { position: absolute; inset: 0 auto 0 0; width: 0; background: repeating-linear-gradient(45deg, #d9ab6f 0 6px, #c9965a 6px 12px); transition: width .2s; }
+  .meter span { position: relative; display: block; text-align: center; font-size: 13px; line-height: 21px; }
+  .xbtn { width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--sheet); font-size: 18px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; padding: 0; }
+  #doneBtn { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: max(18px, env(safe-area-inset-bottom)); width: auto; padding: 10px 26px; font-size: 18px; }
+  #doneBtn:active:not(:disabled) { transform: translateX(-50%) translate(3px, 3px); }
+  #hint { position: fixed; z-index: 15; left: 0; right: 0; top: 40%; text-align: center; font-size: 22px; color: rgba(58,46,42,.75); pointer-events: none; transition: opacity .6s; text-shadow: 0 0 8px #fff; }
+  .bubble { position: fixed; z-index: 25; font-size: 26px; font-weight: 700; background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 4px 12px; pointer-events: none; animation: pop .9s ease-out forwards; }
+  @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 20% { transform: scale(1.15); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; } }
+  #finish { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(253,243,227,.55); }
+  #finish svg { width: 220px; height: 220px; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
+  #finish p { font-size: 26px; margin: 4px 0 0; animation: purr 0.5s ease-in-out infinite alternate; }
+  @keyframes drop { from { transform: translateY(-80px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes purr { from { transform: translateX(-1px); } to { transform: translateX(1px); } }
+
+  /* 圖卡、收藏冊 */
+  #cardImg { width: 100%; max-width: 380px; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); -webkit-touch-callout: default; }
+  .album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+  .album img { width: 100%; border: 2.5px solid var(--ink); border-radius: 8px; cursor: pointer; display: block; }
+  .overlay { position: fixed; inset: 0; z-index: 80; background: rgba(58,46,42,.5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .overlay .card { background: var(--sheet); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 4px 4px 0 var(--ink); padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 380px; width: 100%; text-align: center; }
+  .overlay img { width: 100%; border-radius: 10px; border: 2px solid var(--ink); -webkit-touch-callout: default; }
+  .unlock-ic { font-size: 64px; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
+  #toast { position: fixed; z-index: 90; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff;
+    padding: 10px 18px; border-radius: 16px; font-size: 16px; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; max-width: 90vw; text-align: center; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<button id="muteBtn" class="mute" aria-label="sound">🔊</button>
+
+<!-- 首頁 -->
+<section id="home" class="screen active">
+  <h1 class="title" data-t>抓爛它！</h1>
+  <p class="tagline" data-t>手指一滑，貓爪把紙抓爛</p>
+  <div class="label" data-t>選一隻貓</div>
+  <div id="cats" class="cats"></div>
+  <div class="label" data-t>選材質</div>
+  <div id="mats" class="mats"></div>
+  <button id="startBtn" class="btn" data-t>🐾 開始抓！</button>
+  <button id="albumBtn" class="btn btn-ghost"></button>
+  <div class="foot"><button id="langBtn" class="linkbtn"></button>・<button id="verBtn" class="linkbtn"></button></div>
+  <div id="changes" class="small" hidden></div>
+</section>
+
+<!-- 抓 -->
+<section id="play" class="screen">
+  <canvas id="cv"></canvas>
+  <div id="paw"></div>
+  <div class="hud">
+    <button id="quitBtn" class="xbtn" aria-label="back">✕</button>
+    <div class="chip" id="catChip"></div>
+    <div class="meter"><i id="meterFill"></i><span id="meterTxt"></span></div>
+  </div>
+  <div id="hint" data-t>用手指在紙上用力抓！</div>
+  <button id="doneBtn" class="btn btn-pink" disabled data-t>抓夠了 👌</button>
+  <div id="finish" hidden><div id="finishCat"></div><p data-t>呼嚕呼嚕…</p></div>
+</section>
+
+<!-- 圖卡 -->
+<section id="cardScreen" class="screen">
+  <img id="cardImg" alt="">
+  <div class="row2">
+    <a id="saveBtn" class="btn btn-blue" download="scratch-it.png" data-t>💾 存圖</a>
+    <button id="shareBtn" class="btn btn-blue" data-t>📤 分享</button>
+  </div>
+  <button id="againBtn" class="btn" data-t>🔁 再抓一張</button>
+  <div class="row2">
+    <button id="homeBtn" class="btn btn-ghost" data-t>🐱 換貓／材質</button>
+    <button id="albumBtn2" class="btn btn-ghost" data-t>🖼️ 收藏冊</button>
+  </div>
+</section>
+
+<!-- 收藏冊 -->
+<section id="albumScreen" class="screen">
+  <h2 style="margin:8px 0 0" data-t>🖼️ 收藏冊</h2>
+  <p class="small" data-t>最近 12 張抓痕畫，只存在這支手機裡</p>
+  <div id="album" class="album"></div>
+  <p id="albumEmpty" class="small" data-t>還沒有作品，快去抓一張！</p>
+  <button id="albumBack" class="btn btn-ghost" data-t>← 回首頁</button>
+</section>
+
+<div id="viewer" class="overlay" hidden><div class="card"><img id="viewerImg" alt=""><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
+<div id="unlockPop" class="overlay" hidden><div class="card"><div id="unlockIc" class="unlock-ic"></div><p id="unlockTxt" style="margin:0;font-size:20px"></p><button id="unlockOk" class="btn" data-t>太好了！</button></div></div>
+<div id="toast"></div>
+
+<script src="js/i18n.js?v=0.1.0"></script>
+<script src="js/i18n.en.js?v=0.1.0"></script>
+<script src="js/data.js?v=0.1.0"></script>
+<script src="js/cats.js?v=0.1.0"></script>
+<script src="js/fx.js?v=0.1.0"></script>
+<script src="js/game.js?v=0.1.0"></script>
+</body>
+</html>
