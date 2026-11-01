@@ -90,5 +90,27 @@ const FX = {
     src.connect(lp).connect(g).connect(env).connect(c.destination);
     src.start(t); lfo.start(t); src.stop(t + sec + 0.1); lfo.stop(t + sec + 0.1);
   },
+  // 肉球印章：軟軟的「噗」，越蓋越高一點
+  stamp(n = 0) { const f = 260 * Math.pow(1.015, Math.min(n, 60)); this.tone(f, 0.09, { type: "sine", vol: 0.14, to: f * .6 }); this.burst(0.05, 900, 400, 0.12, "lowpass"); },
+  // 整排清光：往上掃的嘩～＋一串亮亮的音
+  sweep() { this.burst(0.5, 400, 5000, 0.35); [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.22, { type: "triangle", vol: 0.12, at: 0.05 + i * 0.07 })); },
+  // 暴衝完喘氣：呼…呼…
+  pant() { for (let i = 0; i < 4; i++) setTimeout(() => this.burst(0.22, 1400, 700, 0.22), i * 320); },
+  // 跳舞音樂：〈Zoomies〉68 秒後最熱鬧的一段，放幾秒就淡出
+  danceMusic(sec) {
+    if (this.muted || !this.unlocked || typeof MUSIC === "undefined") return;
+    for (const a of Object.values(this.bgm)) a.pause();
+    const a = this.danceA || (this.danceA = new Audio(MUSIC.busy));
+    a.volume = 0.4;
+    const go = () => { try { a.currentTime = 68; } catch {} a.play().catch(() => {}); };
+    if (a.readyState >= 1) go(); else a.addEventListener("loadedmetadata", go, { once: true });
+    clearTimeout(this.danceT); this.danceT = setTimeout(() => this.danceStop(), sec * 1000);
+  },
+  danceStop() {
+    const a = this.danceA; clearTimeout(this.danceT);
+    if (a && !a.paused) {
+      const fade = setInterval(() => { a.volume = Math.max(0, a.volume - 0.05); if (a.volume <= 0) { clearInterval(fade); a.pause(); if (this.wantTrack) this.music(this.wantTrack); } }, 40);
+    }
+  },
   vibrate(ms) { if (!this.muted && navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
 };

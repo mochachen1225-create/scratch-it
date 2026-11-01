@@ -61,6 +61,8 @@
   #cv { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; display: block; }
   #paw.down { transform: translate(-50%, -12%) rotate(-8deg) scale(.92); }
   #paw { position: fixed; width: 64px; height: 98px; pointer-events: none; z-index: 10; transform: translate(-50%, -12%) rotate(-8deg); transition: transform .08s; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.2)); }
+  #paw2 { position: fixed; width: 58px; height: 90px; pointer-events: none; z-index: 10; transform: translate(-50%, -12%) rotate(10deg) scaleX(-1); animation: tap2 .16s infinite alternate; filter: drop-shadow(-2px 3px 0 rgba(0,0,0,.2)); }
+  @keyframes tap2 { to { transform: translate(-50%, -4%) rotate(14deg) scaleX(-1) scale(.92); } }
   .hud { position: fixed; z-index: 20; top: max(10px, env(safe-area-inset-top)); left: 10px; right: 64px; display: flex; align-items: center; gap: 8px; pointer-events: none; }
   .hud > * { pointer-events: auto; }
   .chip { display: flex; align-items: center; gap: 4px; background: var(--sheet); border: 2.5px solid var(--ink); border-radius: 16px; padding: 2px 8px 2px 2px; font-size: 14px; box-shadow: 2px 2px 0 var(--ink); }
@@ -76,6 +78,26 @@
   #hint { position: fixed; z-index: 15; left: 0; right: 0; top: 40%; text-align: center; font-size: 22px; color: rgba(58,46,42,.75); pointer-events: none; transition: opacity .6s; text-shadow: 0 0 8px #fff; }
   .bubble { position: fixed; z-index: 25; font-size: 26px; font-weight: 700; background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 4px 12px; pointer-events: none; animation: pop .9s ease-out forwards; white-space: nowrap; }
   @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 20% { transform: scale(1.15); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; } }
+  .bubble.big { font-size: 34px; background: var(--yellow); animation-duration: 1.3s; }
+  .rowflash { position: fixed; left: 0; right: 0; z-index: 24; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255,255,255,.9) 40%, rgba(255,217,106,.9) 60%, transparent);
+    background-size: 200% 100%; animation: sweep .7s ease-out forwards; }
+  @keyframes sweep { from { background-position: 100% 0; opacity: 1; } to { background-position: -100% 0; opacity: 0; } }
+  body.zoomies .meter { animation: wiggle .18s infinite alternate; } body.zoomies .meter i { background: repeating-linear-gradient(45deg, #ff8a5c 0 6px, #ffb347 6px 12px); }
+  @keyframes wiggle { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
+  /* 跳舞慶祝：同一張坐姿圖，用程式彈跳、擺動、壓扁 */
+  #dance { position: fixed; inset: 0; z-index: 85; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    background: radial-gradient(circle, rgba(255,217,106,.92), rgba(253,243,227,.94) 70%); }
+  #dance p { font-size: 30px; font-weight: 700; margin: 0; text-shadow: 3px 3px 0 #fff; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
+  #dance small { color: var(--muted); font-size: 14px; }
+  .dancers { display: flex; align-items: flex-end; gap: 4px; height: 170px; }
+  .dancer { width: 110px; transform-origin: 50% 100%; }
+  .dancer svg, .dancer .dancepic { width: 110px; height: 110px; object-fit: contain; display: block; }
+  .d-orange { animation: hop .46s ease-in-out infinite; }
+  .d-grey { animation: sway .92s ease-in-out infinite; animation-delay: -.2s; }
+  .d-white { animation: crazy .62s ease-in-out infinite; animation-delay: -.1s; }
+  @keyframes hop { 0%, 100% { transform: translateY(0) scale(1.08, .9); } 45% { transform: translateY(-46px) scale(.94, 1.08); } 55% { transform: translateY(-46px) scale(.94, 1.08); } }
+  @keyframes sway { 0%, 100% { transform: rotate(-12deg) translateY(0); } 25% { transform: rotate(0) translateY(-20px); } 50% { transform: rotate(12deg) translateY(0); } 75% { transform: rotate(0) translateY(-20px); } }
+  @keyframes crazy { 0% { transform: translateY(0) rotate(0) scale(1.1, .88); } 30% { transform: translateY(-60px) rotate(-20deg) scale(.9, 1.1); } 55% { transform: translateY(-30px) rotate(25deg); } 80% { transform: translateY(-8px) rotate(-6deg) scale(1.05, .95); } 100% { transform: translateY(0) rotate(0) scale(1.1, .88); } }
   #finish { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(253,243,227,.55); }
   #finish svg { width: 220px; height: 220px; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
   #finish p { font-size: 26px; margin: 4px 0 0; animation: purr 0.5s ease-in-out infinite alternate; }
@@ -118,6 +140,7 @@
 <section id="play" class="screen">
   <canvas id="cv"></canvas>
   <div id="paw"></div>
+  <div id="paw2" hidden></div>
   <div class="hud">
     <button id="quitBtn" class="xbtn" aria-label="back">✕</button>
     <div class="chip" id="catChip"></div>
@@ -154,13 +177,14 @@
 
 <div id="viewer" class="overlay" hidden><div class="card"><img id="viewerImg" alt=""><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
 <div id="unlockPop" class="overlay" hidden><div class="card"><div id="unlockIc" class="unlock-ic"></div><p id="unlockTxt" style="margin:0;font-size:20px"></p><button id="unlockOk" class="btn" data-t>太好了！</button></div></div>
+<div id="dance" hidden><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.2.1"></script>
-<script src="js/i18n.en.js?v=0.2.1"></script>
-<script src="js/data.js?v=0.2.1"></script>
-<script src="js/cats.js?v=0.2.1"></script>
-<script src="js/fx.js?v=0.2.1"></script>
-<script src="js/game.js?v=0.2.1"></script>
+<script src="js/i18n.js?v=0.3.0"></script>
+<script src="js/i18n.en.js?v=0.3.0"></script>
+<script src="js/data.js?v=0.3.0"></script>
+<script src="js/cats.js?v=0.3.0"></script>
+<script src="js/fx.js?v=0.3.0"></script>
+<script src="js/game.js?v=0.3.0"></script>
 </body>
 </html>

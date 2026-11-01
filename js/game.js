@@ -1,6 +1,9 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.2.1";
+const VERSION = "0.3.0";
 const CHANGES = [
+  "暴衝時間：連續狂抓會進入 8 秒暴衝，洞多三倍、畫面跟著晃",
+  "一整排碎光會大慶祝；長按可以蓋肉球印章",
+  "解鎖新材質或破紀錄，三隻貓出來跳舞",
   "加上背景音樂和插畫版貓掌",
   "密密麻麻的小洞：抓滿一塊就「啵」整片碎掉，還會連鎖",
   "新材質：泡泡紙，抓過去啵啵啵",
@@ -229,7 +232,10 @@ function startGame() {
     start: performance.now(), scratchMs: 0, particles: [], down: false, pid: null,
     fx: 0, fy: 0, paw: { x: Wd / 2, y: Ht / 2 }, stroke: null, strokes: [], moved: 0, lastT: 0,
     frenzyRun: 0, lastMove: 0, nextBurst: performance.now() + rand(6000, 10000), burstUntil: 0, jx: 0, jy: 0,
-    progress: 0, done: false, minX: Wd, minY: Ht, maxX: 0, maxY: 0
+    progress: 0, done: false, minX: Wd, minY: Ht, maxX: 0, maxY: 0,
+    press: null, stamps: 0, rows: 0, rowDone: {}, lastRowFx: 0,
+    // 暴衝時間：一局最多一次。抓到隨機的進度點（30～65%）時正在連續抓 4 秒以上，或抓到某個隨機時間點（小弟比較容易）
+    zoom: 0, zoomUntil: 0, zoomP: rand(.3, .65), zoomAt: Math.random() < (save.cat === "white" ? .7 : .3) ? rand(8000, 16000) : Infinity
   };
   if (m.mode === "bubble") setupBubbles(); else { setupHoles(); paintUnder(m); }
   texImg = null;
@@ -240,12 +246,14 @@ function startGame() {
   $("#doneBtn").disabled = true; $("#finish").hidden = true; $("#hint").style.opacity = 1;
   updateMeter();
   FX.start(m);
-  FX.music(G.catId === "white" || m.id === "bubble" ? "busy" : "calm");
+  G.track = G.catId === "white" || m.id === "bubble" ? "busy" : "calm";
+  FX.music(G.track);
+  cv.style.transform = "";
   cancelAnimationFrame(raf); last = performance.now(); raf = requestAnimationFrame(loop);
 }
 $("#quitBtn").addEventListener("click", () => { FX.tap(); endPlay(); show("home"); renderHome(); });
 $("#doneBtn").addEventListener("click", () => { if (G && !G.done) finish(); });
-function endPlay() { cancelAnimationFrame(raf); FX.stop(); G = null; }
+function endPlay() { cancelAnimationFrame(raf); FX.stop(); cv.style.transform = ""; document.body.classList.remove("zoomies"); $("#paw2").hidden = true; G = null; }
 
 /* ================= 抓：爪痕＋密密麻麻的小洞 ================= */
 // 「幸福的密集恐懼感」：爪尖沿路打出小圓洞，洞吸附在蜂巢格上，越抓越整齊密集；
@@ -297,14 +305,15 @@ function paintUnder(m) {
   for (let j = 0; j * ROWH < Ht; j++) for (let i = 0; i * HEX < Wd; i++) { const [x, y] = hexPos(i, j); c.beginPath(); c.arc(x, y, 1.4, 0, Math.PI * 2); c.fill(); }
 }
 function setupBubbles() {
-  const r = 8.5, gap = 19, list = [], grid = new Map();
+  const r = 8.5, gap = 19, list = [], grid = new Map(), rowLeft = [], rowTot = [], rowDone = [];
   for (let j = 0, y = gap * .8; y < Ht - gap * .5; j++, y += gap * .866)
     for (let x = (j % 2 ? gap : gap / 2) + 2; x < Wd - gap * .4; x += gap) {
       const k = `${Math.floor(x / gap)},${Math.floor(y / gap)}`;
       if (!grid.has(k)) grid.set(k, []);
-      grid.get(k).push(list.length); list.push({ x, y, r, popped: false });
+      grid.get(k).push(list.length); list.push({ x, y, r, j, popped: false });
+      rowLeft[j] = (rowLeft[j] || 0) + 1; rowTot[j] = rowLeft[j];
     }
-  G.bub = { r, gap, list, grid, total: list.length };
+  G.bub = { r, gap, list, grid, rowLeft, rowTot, rowDone, total: list.length };
 }
 function track2(x, y) { G.minX = Math.min(G.minX, x); G.maxX = Math.max(G.maxX, x); G.minY = Math.min(G.minY, y); G.maxY = Math.max(G.maxY, y); }
 function punchAt(x, y) {
@@ -337,6 +346,8 @@ function burstPatch(p, chain) {
   const h = G.hx; if (h.pDone[p] || !G) return;
   h.pDone[p] = 1; G.bursts++;
   const pc = h.pc, pi = p % pc, pj = Math.floor(p / pc), c = dctx, m = G.m;
+  let full = true;
+  for (let i = 0; i < pc; i++) { const q = pj * pc + i; if (h.pTotal[q] && !h.pDone[q]) { full = false; break; } }
   const cells = [];
   for (let j = pj * PATCH; j < Math.min(h.rows, (pj + 1) * PATCH); j++) for (let i = pi * PATCH; i < Math.min(h.cols, (pi + 1) * PATCH); i++) {
     const k = j * h.cols + i; if (h.punched[k] === 2) continue;
@@ -360,6 +371,17 @@ function burstPatch(p, chain) {
   }
   else if (Math.random() < .25) bubble(T("啵！"), cx, cy - 40);
   if (m.id === "sofa" && Math.random() < .25) spring(cx, cy);
+  // 一排碎了六成：剩下的區塊從左到右一路掃過去碎掉，整排清光
+  if (!G.rowDone[pj]) {
+    let done = 0, tot = 0;
+    for (let i = 0; i < pc; i++) { const q = pj * pc + i; if (h.pTotal[q]) { tot++; done += h.pDone[q]; } }
+    if (full || done >= tot * .6) {
+      G.rowDone[pj] = 1;
+      const rest = []; for (let i = 0; i < pc; i++) { const q = pj * pc + i; if (h.pTotal[q] && !h.pDone[q]) rest.push(q); }
+      rest.forEach((q, n) => setTimeout(() => G && !G.done && burstPatch(q, 0), 160 + n * 70));
+      setTimeout(() => G && !G.done && rowClear((pj + .5) * PATCH * ROWH, PATCH * ROWH), 200 + rest.length * 70);
+    }
+  }
   // 連鎖：旁邊打到六成以上的區塊，接著一塊一塊碎
   setTimeout(() => {
     if (!G || G.done) return;
@@ -374,6 +396,13 @@ function popNear(x, y) {
       const q = b.list[id];
       if (q.popped || Math.hypot(q.x - x, q.y - y) > q.r * .95) continue;
       q.popped = true; G.holes++;
+      // 一排啵了八成：剩下的從左到右一路啵過去
+      if (--b.rowLeft[q.j] <= b.rowTot[q.j] * .2 && !b.rowDone[q.j]) {
+        b.rowDone[q.j] = 1;
+        const rest = b.list.filter(o => o.j === q.j && !o.popped).sort((u, v) => u.x - v.x), y = q.y;
+        rest.forEach((o, n) => setTimeout(() => G && !G.done && popNear(o.x, o.y), 120 + n * 45));
+        setTimeout(() => G && !G.done && rowClear(y, b.gap * .9), 160 + rest.length * 45);
+      }
       // 破掉的泡泡：扁扁皺皺
       const c = dctx; c.fillStyle = G.m.hole; c.beginPath(); c.arc(q.x, q.y, q.r * .92, 0, Math.PI * 2); c.fill();
       c.strokeStyle = "rgba(120,170,205,.8)"; c.lineWidth = 1; c.beginPath();
@@ -390,6 +419,10 @@ function claw(x0, y0, x1, y1, power = 1) {
   if (len < 0.6) return;
   const nx = -dy / len, ny = dx / len, m = G.m, c = dctx;
   const sp = G.cat.spacing * (G.catId === "white" ? rand(.8, 1.35) : 1);
+  // 暴衝時：爪痕變粗，每一爪打兩排洞，再加上第二隻掌一起抓（共約三倍）
+  const z = G.zoom === 1 && power > 0, lanes = z ? [-HEX * .3, HEX * .3] : [0];
+  if (z) power *= 1.8;
+  power = Math.abs(power);
   for (let i = 0; i < 4; i++) {
     const off = (i - 1.5) * sp;
     const ax = x0 + nx * off, ay = y0 + ny * off, bx = x1 + nx * off, by = y1 + ny * off;
@@ -399,10 +432,10 @@ function claw(x0, y0, x1, y1, power = 1) {
     const step = 4;
     for (let s2 = 0; s2 <= len; s2 += step) {
       const px = ax + (bx - ax) * s2 / len, py = ay + (by - ay) * s2 / len;
-      if (m.mode === "bubble") popNear(px, py); else punchAt(px, py);
+      for (const o of lanes) { const qx = px + nx * o, qy = py + ny * o; if (m.mode === "bubble") popNear(qx, qy); else punchAt(qx, qy); }
     }
   }
-  const n = len / 16 * (G.catId === "white" ? 1.7 : G.catId === "grey" ? .7 : 1);
+  const n = len / 16 * (G.catId === "white" ? 1.7 : G.catId === "grey" ? .7 : 1) * (z ? 3 : 1);
   for (let i = 0; i < n; i++) if (Math.random() < n - i) spawnDebris(x0 + dx * Math.random(), y0 + dy * Math.random(), nx, ny);
   G.moved += len;
   if (G.moved > 50) { G.moved = 0; FX.vibrate(5); }
@@ -453,6 +486,8 @@ function bubble(text, x, y) {
 // 白貓：亂抖、分岔、偶爾打大洞，還會突然暴衝
 function onMove(x, y) {
   const s = G.stroke; if (!s) return;
+  if (G.press && Math.hypot(x - G.press.x, y - G.press.y) > 12) G.press = null;
+  if (G.press && G.press.n) return;   // 正在蓋印章：手指小抖動不算抓
   const prev = { x: G.paw.x, y: G.paw.y };
   if (G.catId === "orange") {
     const vx = x - s.ax, vy = y - s.ay;
@@ -486,6 +521,7 @@ function track(prev) {
   const dt = Math.max(16, now - G.lastT); G.lastT = now;
   FX.scratch(d / dt);
   if (d > 0.5) { G.scratchMs += Math.min(dt, 60); G.lastMove = now; }
+  if (G.zoom === 1 && d > 0.5) claw(prev.x + 46, prev.y + 14, G.paw.x + 46, G.paw.y + 14, -1.8);
   movePaw();
 }
 function setPaw(out) {
@@ -494,7 +530,10 @@ function setPaw(out) {
   p.innerHTML = src ? `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:contain;object-position:top">` : pawSVG(G.catId, out);
   p.classList.toggle("down", out);
 }
-function movePaw() { const p = $("#paw"); p.style.left = G.paw.x + "px"; p.style.top = G.paw.y + "px"; }
+function movePaw() {
+  const p = $("#paw"); p.style.left = G.paw.x + "px"; p.style.top = G.paw.y + "px";
+  const q = $("#paw2"); if (!q.hidden) { q.style.left = G.paw.x + 46 + "px"; q.style.top = G.paw.y + 14 + "px"; }
+}
 
 cv.addEventListener("pointerdown", e => {
   if (!G || G.done || G.pid !== null) return;
@@ -503,6 +542,7 @@ cv.addEventListener("pointerdown", e => {
   G.down = true; G.fx = e.clientX; G.fy = e.clientY;
   G.paw.x = e.clientX; G.paw.y = e.clientY;
   G.stroke = { ax: e.clientX, ay: e.clientY, dir: null, path: 0 };
+  G.press = { x: e.clientX, y: e.clientY, t: performance.now(), n: 0, next: 0 };
   G.lastT = performance.now();
   setPaw(true); $("#paw").style.opacity = 1; movePaw();
   $("#hint").style.opacity = 0;
@@ -516,7 +556,7 @@ const lift = e => {
   if (!G || e.pointerId !== G.pid) return;
   const s = G.stroke;
   if (s && s.path > 5) G.strokes.push({ path: s.path, straight: Math.min(1, Math.hypot(G.paw.x - s.ax, G.paw.y - s.ay) / s.path) * (G.catId === "orange" ? 0 : 1) + (G.catId === "orange" ? 1 : 0) });
-  G.pid = null; G.down = false; G.stroke = null; FX.quiet();
+  G.pid = null; G.down = false; G.stroke = null; G.press = null; FX.quiet();
   setPaw(false); $("#paw").style.opacity = .85;
 };
 cv.addEventListener("pointerup", lift);
@@ -548,6 +588,14 @@ function loop(now) {
     // 連續亂抓多久（衛生紙捲的隱藏條件）
     if (now - G.lastMove < 350) G.frenzyRun += dt; else G.frenzyRun = 0;
     save.frenzy = Math.max(save.frenzy, Math.floor(G.frenzyRun));
+    // 長按不動：蓋肉球印章，一圈一圈往外蓋滿
+    const pr = G.press;
+    if (pr && now - pr.t > 450 && now > pr.next) { stampAt(pr); pr.next = now + (pr.n < 3 ? 160 : 70); }
+    if (!G.zoom && ((G.frenzyRun >= 4 && G.progress >= G.zoomP) || G.scratchMs > G.zoomAt)) startZoomies(now);
+  }
+  if (G.zoom === 1) {
+    if (now > G.zoomUntil || G.done) endZoomies();
+    else cv.style.transform = `translate(${rand(-3, 3)}px,${rand(-3, 3)}px)`;
   }
   if (now < G.rainUntil) {
     // 抓完：紙屑雨，堆得越來越高
@@ -576,6 +624,59 @@ function updateMeter() {
   $("#doneBtn").disabled = G.progress < .15;
 }
 
+/* ================= 好玩：肉球印章、整排清光、暴衝時間 ================= */
+// 長按蓋印章：第一個蓋在手指下，之後沿著向日葵螺旋往外蓋，密密麻麻排滿
+function stampAt(pr) {
+  const n = pr.n++, a = n * 2.399, r = 13 * Math.sqrt(n);
+  if (n > 90) return;
+  const x = pr.x + Math.cos(a) * r, y = pr.y + Math.sin(a) * r;
+  if (x < 8 || y < 8 || x > Wd - 8 || y > Ht - 8) return;
+  const m = G.m, c = dctx, k = .95, rot = rand(-.35, .35);
+  // 先在肉球的位置打洞（算進抓爛度），再蓋上淡淡的肉球
+  const spots = [[0, 4, 6], [-7, -5, 3], [-2.5, -9, 3], [2.5, -9, 3], [7, -5, 3]];
+  for (const [dx, dy] of spots) {
+    const px = x + (dx * Math.cos(rot) - dy * Math.sin(rot)) * k, py = y + (dx * Math.sin(rot) + dy * Math.cos(rot)) * k;
+    if (m.mode === "bubble") popNear(px, py); else punchAt(px, py);
+  }
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(k, k);
+  c.globalAlpha = .82; c.fillStyle = m.stamp || "#e8879c";
+  c.beginPath(); c.ellipse(0, 4, 7, 5.6, 0, 0, Math.PI * 2); c.fill();
+  for (const [dx, dy] of spots.slice(1)) { c.beginPath(); c.ellipse(dx, dy, 2.6, 3.2, 0, 0, Math.PI * 2); c.fill(); }
+  c.restore();
+  track2(x, y); G.stamps++;
+  FX.stamp(n); FX.vibrate(8);
+  if (n === 0) bubble(T("蓋章！"), x, y - 70);
+  else if (n === 30) bubble(T("蓋滿滿！"), x, y - 90);
+}
+// 一整排都碎光：像消掉一排一樣大慶祝
+function rowClear(y, hgt) {
+  G.rows++;
+  const now = performance.now();
+  for (let i = 0; i < 70; i++) G.particles.push({ x: rand(0, Wd), y: y + rand(-hgt / 2, hgt / 2), vx: rand(-120, 120), vy: rand(-520, -200), rot: rand(0, 6.3), vr: rand(-10, 10),
+    w: rand(6, 11), h: rand(3, 6), color: ["#ffd96a", "#ffb8c6", "#a9e5c6", "#aed5ff", "#ffffff"][i % 5], floor: Ht - rand(4, G.rainBand) });
+  const f = document.createElement("div"); f.className = "rowflash"; f.style.top = (y - hgt / 2) + "px"; f.style.height = hgt + "px";
+  document.body.appendChild(f); setTimeout(() => f.remove(), 700);
+  FX.vibrate([20, 30, 40]);
+  if (now - G.lastRowFx < 700) { FX.pop(3); return; }   // 太密集時只響一聲，不洗版
+  G.lastRowFx = now;
+  FX.sweep();
+  const b = bubble(G.rows > 1 ? T("整排清光！×{0}", G.rows) : T("整排清光！"), Wd / 2 - 70, y - 50); b.classList.add("big");
+}
+function startZoomies(now) {
+  G.zoom = 1; G.zoomUntil = now + 8000;
+  FX.music("zoomies"); FX.vibrate([40, 30, 40]);
+  document.body.classList.add("zoomies");
+  // 好玩很多：第二隻掌也加入，兩隻一起狂抓
+  const q = $("#paw2"); q.innerHTML = $("#paw").innerHTML; q.hidden = false; movePaw();
+  const b = bubble(T("暴衝時間！"), Wd / 2 - 70, Ht * .3); b.classList.add("big");
+}
+function endZoomies() {
+  G.zoom = 2; cv.style.transform = ""; document.body.classList.remove("zoomies"); $("#paw2").hidden = true;
+  if (G.done) return;
+  FX.music(G.track); FX.pant();
+  bubble(T("呼…呼…"), G.paw.x, G.paw.y - 70);
+}
+
 /* ================= 抓完 ================= */
 function coverage() { return G.holes / ((G.hx || G.bub).total || 1); }
 function artStyle() {
@@ -592,6 +693,7 @@ function artStyle() {
 }
 function finish() {
   G.done = true; G.down = false; G.pid = null; FX.quiet();
+  if (G.zoom === 1) endZoomies();
   $("#paw").style.opacity = 0;
   const sec = Math.max(1, Math.round((performance.now() - G.start) / 1000));
   // 先把抓完的畫存起來，再演「紙屑淹到只剩耳朵」
@@ -603,9 +705,10 @@ function finish() {
   save.paintings++; save.no++;
   save.time += Math.round(G.scratchMs / 1000);
   if (!save.cats.includes(G.catId)) save.cats.push(G.catId);
+  const record = save.paintings > 2 && G.holes > save.maxHoles;
   save.maxHoles = Math.max(save.maxHoles, G.holes);
   save.totalHoles += G.holes;
-  const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(), no: save.no, holes: G.holes, chain: G.bestChain || 0 };
+  const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(), no: save.no, holes: G.holes, chain: G.bestChain || 0, zoom: G.zoom ? 1 : 0, rows: G.rows, stamps: G.stamps };
   const fresh = checkUnlocks();
   G.rainBand = Ht * .3; G.rainUntil = performance.now() + 1100;
   setTimeout(diveIn, 1100);
@@ -620,8 +723,10 @@ function finish() {
     save.album.unshift({ img: card.thumb, title: card.title, date: Date.now() });
     save.album = save.album.slice(0, 12);
     persist();
-    if (fresh.length) showUnlock(fresh[0]);
     G = null;
+    // 解鎖新材質或破紀錄：三隻貓出來跳舞
+    if (fresh.length) dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
+    else if (record) dance(T("新紀錄！{0} 個洞", info.holes.toLocaleString()));
   }, 3300);
 }
 // 貓跳進紙屑堆：畫在爪痕那一層，再用紙屑堆蓋住，只露出耳朵（小弟只露尾巴）
@@ -664,6 +769,17 @@ function showUnlock(m) {
   $("#unlockPop").hidden = false; FX.unlockChime();
 }
 $("#unlockOk").addEventListener("click", () => { $("#unlockPop").hidden = true; FX.tap(); });
+// 跳舞慶祝：三隻貓的坐姿插畫用程式動起來（彈跳、擺動、壓扁），配〈Zoomies〉最熱鬧的一段
+function dance(text) {
+  const d = $("#dance");
+  d.querySelector(".dancers").innerHTML = Object.keys(CATS).map(id => `<div class="dancer d-${id}">${catImg(id, "sit", "dancepic")}</div>`).join("");
+  d.querySelector("p").textContent = text;
+  d.hidden = false; FX.danceMusic(5); FX.unlockChime();
+  return new Promise(res => {
+    const done = () => { if (d.hidden) return; d.hidden = true; FX.danceStop(); res(); };
+    d.onclick = done; setTimeout(done, 4800);
+  });
+}
 
 /* ================= 爪痕畫圖卡（1080×1350） ================= */
 let shareFile = null;
@@ -703,8 +819,10 @@ async function buildCard(info) {
   x.font = F(38); x.fillStyle = "#6a5a52";
   x.fillText(T("{0}的抓痕畫・{1}・{2} 秒", W(cat.name), W(cat.style), info.sec), 272, 1132, 760);
   const holesTxt = info.mat === "bubble" ? T("啵了 {0} 顆泡泡", info.holes.toLocaleString()) : T("這張打了 {0} 個洞", info.holes.toLocaleString());
-  x.font = F(32); x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${holesTxt}${info.chain >= 3 ? "・" + T("最長連鎖 ×{0}", info.chain) : ""}`, 272, 1184, 760);
-  x.textAlign = "center"; x.fillStyle = "#3a2e2a"; x.font = F(34, true); x.fillText(T("抓爛它！"), W0 / 2, 1268);
+  x.font = F(32); x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${holesTxt}`, 272, 1184, 760);
+  const extra = [info.chain >= 3 && T("最長連鎖 ×{0}", info.chain), info.rows && T("清光 {0} 排", info.rows), info.zoom && T("暴衝 ×{0}", info.zoom), info.stamps >= 5 && T("肉球章 ×{0}", info.stamps)].filter(Boolean);
+  if (extra.length) { x.fillStyle = "#c06a3a"; x.fillText(extra.join("・"), 272, 1228, 760); }
+  x.textAlign = "center"; x.fillStyle = "#3a2e2a"; x.font = F(34, true); x.fillText(T("抓爛它！"), W0 / 2, 1280);
   x.font = F(26); x.fillStyle = "#4a7fc0"; x.fillText(GAME_URL, W0 / 2, 1310);
   const blob = await new Promise(r => c.toBlob(r, "image/png"));
   const url = URL.createObjectURL(blob);
