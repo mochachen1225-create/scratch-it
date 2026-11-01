@@ -184,7 +184,7 @@ function startGame() {
     frenzyRun: 0, lastMove: 0, nextBurst: performance.now() + rand(6000, 10000), burstUntil: 0, jx: 0, jy: 0,
     progress: 0, done: false, minX: Wd, minY: Ht, maxX: 0, maxY: 0
   };
-  $("#paw").innerHTML = pawSVG(save.cat); $("#paw").style.opacity = 0;
+  setPaw(false); $("#paw").style.opacity = .85; G.paw.x = Wd / 2; G.paw.y = Ht * .62; movePaw();
   $("#catChip").innerHTML = `${catSVG(save.cat, "sit")}<span>${W(cat.name)}</span>`;
   $("#doneBtn").disabled = true; $("#finish").hidden = true; $("#hint").style.opacity = 1;
   updateMeter();
@@ -333,6 +333,7 @@ function track(prev) {
   if (d > 0.5) { G.scratchMs += Math.min(dt, 60); G.lastMove = now; }
   movePaw();
 }
+function setPaw(out) { const p = $("#paw"); p.innerHTML = pawSVG(G.catId, out); p.classList.toggle("down", out); }
 function movePaw() { const p = $("#paw"); p.style.left = G.paw.x + "px"; p.style.top = G.paw.y + "px"; }
 
 cv.addEventListener("pointerdown", e => {
@@ -343,7 +344,7 @@ cv.addEventListener("pointerdown", e => {
   G.paw.x = e.clientX; G.paw.y = e.clientY;
   G.stroke = { ax: e.clientX, ay: e.clientY, dir: null, path: 0 };
   G.lastT = performance.now();
-  $("#paw").style.opacity = 1; movePaw();
+  setPaw(true); $("#paw").style.opacity = 1; movePaw();
   $("#hint").style.opacity = 0;
 });
 cv.addEventListener("pointermove", e => {
@@ -356,7 +357,7 @@ const lift = e => {
   const s = G.stroke;
   if (s && s.path > 5) G.strokes.push({ path: s.path, straight: Math.min(1, Math.hypot(G.paw.x - s.ax, G.paw.y - s.ay) / s.path) * (G.catId === "orange" ? 0 : 1) + (G.catId === "orange" ? 1 : 0) });
   G.pid = null; G.down = false; G.stroke = null; FX.quiet();
-  $("#paw").style.opacity = .5;
+  setPaw(false); $("#paw").style.opacity = .85;
 };
 cv.addEventListener("pointerup", lift);
 cv.addEventListener("pointercancel", lift);

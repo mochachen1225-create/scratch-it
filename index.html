@@ -59,7 +59,8 @@
   /* 抓的畫面 */
   #play { padding: 0; max-width: none; }
   #cv { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; display: block; }
-  #paw { position: fixed; width: 54px; height: 63px; pointer-events: none; z-index: 10; transform: translate(-50%, -30%) rotate(-8deg); filter: drop-shadow(2px 3px 0 rgba(0,0,0,.2)); }
+  #paw.down { transform: translate(-50%, -12%) rotate(-8deg) scale(.92); }
+  #paw { position: fixed; width: 64px; height: 98px; pointer-events: none; z-index: 10; transform: translate(-50%, -12%) rotate(-8deg); transition: transform .08s; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.2)); }
   .hud { position: fixed; z-index: 20; top: max(10px, env(safe-area-inset-top)); left: 10px; right: 64px; display: flex; align-items: center; gap: 8px; pointer-events: none; }
   .hud > * { pointer-events: auto; }
   .chip { display: flex; align-items: center; gap: 4px; background: var(--sheet); border: 2.5px solid var(--ink); border-radius: 16px; padding: 2px 8px 2px 2px; font-size: 14px; box-shadow: 2px 2px 0 var(--ink); }

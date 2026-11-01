@@ -92,18 +92,25 @@ function catSVG(id, pose = "sit") {
     ${box}`);
 }
 
-// 跟著手指的貓掌（爪子伸出來）
-function pawSVG(id) {
+// 第一人稱的貓掌：玩家的手指就是貓手。按下去爪子伸出來（out），抬起來收回去
+// 總編：橘色條紋掌；架構師：銀灰掌；小弟：白色小掌、粉色肉球
+function pawSVG(id, out = false) {
   const c = CATS[id];
-  return `<svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="${INK}" stroke-width="2" stroke-linecap="round">
-      <path d="M14 14 l-3 -12 M24 8 l-1 -8 M36 8 l1 -8 M46 14 l3 -12" stroke="#fff" stroke-width="3"/>
-      <path d="M14 14 l-3 -12 M24 8 l-1 -8 M36 8 l1 -8 M46 14 l3 -12"/>
-    </g>
-    <ellipse cx="30" cy="44" rx="22" ry="22" fill="${c.fur}" stroke="${INK}" stroke-width="3"/>
-    <g fill="#f6a5a5" stroke="${INK}" stroke-width="1.5">
+  const small = id === "white";
+  const s = small ? .86 : 1;
+  const claws = out
+    ? `<g stroke="${INK}" stroke-width="2" stroke-linecap="round"><path d="M14 18 l-4 -14 M24 11 l-1 -11 M36 11 l1 -11 M46 18 l4 -14" stroke="#fff" stroke-width="3.4"/><path d="M14 18 l-4 -14 M24 11 l-1 -11 M36 11 l1 -11 M46 18 l4 -14"/></g>`
+    : "";
+  const stripes = id === "orange"
+    ? `<path d="M10 52 q8 -3 14 2 M36 54 q8 -5 14 -2 M18 64 q12 -4 24 0" stroke="${c.stripe}" stroke-width="3.5" fill="none" stroke-linecap="round"/>` : "";
+  return `<svg viewBox="0 0 60 92" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${30 - 30 * s} 0) scale(${s})">
+    ${claws}
+    <path d="M8 60 q0 24 6 32 h32 q6 -8 6 -32 z" fill="${c.fur}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="30" cy="44" rx="24" ry="24" fill="${c.fur}" stroke="${INK}" stroke-width="3"/>
+    ${stripes}
+    <g fill="${id === "white" ? "#ffb3c6" : "#f6a5a5"}" stroke="${INK}" stroke-width="1.5">
       <ellipse cx="30" cy="50" rx="10" ry="8"/>
-      <ellipse cx="15" cy="34" rx="5" ry="6"/><ellipse cx="25" cy="27" rx="5" ry="6"/><ellipse cx="35" cy="27" rx="5" ry="6"/><ellipse cx="45" cy="34" rx="5" ry="6"/>
+      <ellipse cx="14" cy="35" rx="5" ry="6"/><ellipse cx="24" cy="27" rx="5" ry="6"/><ellipse cx="36" cy="27" rx="5" ry="6"/><ellipse cx="46" cy="35" rx="5" ry="6"/>
     </g>
-  </svg>`;
+  </g></svg>`;
 }
