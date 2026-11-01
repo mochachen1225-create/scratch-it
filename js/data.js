@@ -25,7 +25,7 @@ const CATS = {
 // 材質：手感、聲音、紙屑都不同。ready = 這一版做好了沒
 const MATERIALS = [
   { id: "cardboard", name: "瓦楞紙貓抓板", icon: "📦", ready: true, unlock: null,
-    base: "#cf9f62", base2: "#b9884c", groove: "#6b4a26", fuzz: "#f0d4a6", hole: "#3b2a18",
+    base: "#d9b483", base2: "#c79d66", groove: "#8a6236", fuzz: "#f6e2bd", hole: "#2e2116",
     holeAt: 11, debris: "strip", sound: { type: "bandpass", freq: 2600, q: 1.1, crackle: 0.5, gain: 0.5 } },
   { id: "sofa", name: "沙發", icon: "🛋️", ready: true, unlock: { type: "paintings", n: 3 },
     base: "#5f9e96", base2: "#4f8a83", groove: "#3f6f69", fuzz: "#e9f3f1", hole: "#fff7ea",

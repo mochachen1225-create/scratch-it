@@ -148,14 +148,22 @@ function paintBase(m) {
   const c = bctx;
   c.fillStyle = m.base; c.fillRect(0, 0, Wd, Ht);
   if (m.id === "cardboard") {
-    // 瓦楞紙貓抓板：一條一條的紙層
-    for (let y = 0; y < Ht; y += 9) {
-      c.fillStyle = (y / 9) % 2 ? m.base2 : m.base; c.fillRect(0, y, Wd, 9);
-      c.fillStyle = "rgba(255,240,210,.18)"; c.fillRect(0, y, Wd, 1.5);
-      c.fillStyle = "rgba(80,50,20,.18)"; c.fillRect(0, y + 7.5, Wd, 1.5);
+    // 瓦楞紙貓抓板：一條條瓦楞紙側立排在一起，從上面看是一排排細波浪（牛皮紙波浪絲帶並排）
+    const row = 7;
+    for (let y = 0; y < Ht; y += row) {
+      // 每一條紙：亮的面紙、中間的波浪芯、底下一點陰影
+      const tone = rand(-8, 8), shade = v => `rgb(${217 + tone + v},${180 + tone + v},${131 + tone + v})`;
+      c.fillStyle = shade(0); c.fillRect(0, y, Wd, row);
+      c.fillStyle = "rgba(255,245,225,.55)"; c.fillRect(0, y, Wd, 1);
+      c.fillStyle = "rgba(95,62,28,.42)"; c.fillRect(0, y + row - 1.2, Wd, 1.2);
+      c.strokeStyle = "rgba(120,82,40,.55)"; c.lineWidth = 1; c.beginPath();
+      const ph = rand(0, 6);
+      for (let x = 0; x <= Wd; x += 1.5) { const yy = y + row / 2 + Math.sin((x + ph) * 1.05) * (row / 2 - 1.6); x ? c.lineTo(x, yy) : c.moveTo(x, yy); }
+      c.stroke();
     }
-    for (let i = 0; i < Wd * Ht / 900; i++) { c.fillStyle = `rgba(90,60,30,${rand(.04, .1)})`; c.fillRect(rand(0, Wd), rand(0, Ht), rand(1, 3), 1); }
-    c.strokeStyle = "rgba(60,40,20,.5)"; c.lineWidth = 6; c.strokeRect(3, 3, Wd - 6, Ht - 6);
+    // 紙纖維小顆粒
+    for (let i = 0; i < Wd * Ht / 120; i++) { c.fillStyle = Math.random() < .5 ? `rgba(110,72,35,${rand(.08, .2)})` : `rgba(255,248,230,${rand(.15, .35)})`; c.fillRect(rand(0, Wd), rand(0, Ht), rand(.6, 1.6), rand(.6, 1.2)); }
+    c.strokeStyle = "rgba(70,45,20,.55)"; c.lineWidth = 6; c.strokeRect(3, 3, Wd - 6, Ht - 6);
   } else if (m.id === "sofa") {
     // 沙發：布紋＋坐墊縫線
     for (let y = 0; y < Ht; y += 4) for (let x = (y / 4) % 2 * 2; x < Wd; x += 4) { c.fillStyle = "rgba(255,255,255,.05)"; c.fillRect(x, y, 2, 2); }
@@ -205,13 +213,29 @@ function claw(x0, y0, x1, y1, power = 1) {
   for (let i = 0; i < 4; i++) {
     const off = (i - 1.5) * sp;
     const ax = x0 + nx * off, ay = y0 + ny * off, bx = x1 + nx * off, by = y1 + ny * off;
-    // 溝：深色，旁邊一道亮的毛邊
     c.lineCap = "round";
-    c.strokeStyle = m.fuzz; c.globalAlpha = .55; c.lineWidth = 4.6;
-    c.beginPath(); c.moveTo(ax + nx, ay + ny); c.lineTo(bx + nx, by + ny); c.stroke();
-    c.globalAlpha = .9; c.strokeStyle = m.groove; c.lineWidth = 2.6 * power;
-    c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
-    c.globalAlpha = 1;
+    if (m.id === "cardboard") {
+      // 瓦楞紙：波浪層被刮開，翻出淺色毛邊，下面一點陰影
+      c.strokeStyle = m.groove; c.globalAlpha = .45; c.lineWidth = 3.4 * power;
+      c.beginPath(); c.moveTo(ax + nx * 1.2, ay + ny * 1.2 + .8); c.lineTo(bx + nx * 1.2, by + ny * 1.2 + .8); c.stroke();
+      c.globalAlpha = .95; c.strokeStyle = m.fuzz; c.lineWidth = 2.4 * power;
+      c.beginPath(); c.moveTo(ax, ay);
+      const n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / 3));
+      for (let j = 1; j <= n; j++) c.lineTo(ax + (bx - ax) * j / n + rand(-.9, .9), ay + (by - ay) * j / n + rand(-.9, .9));
+      c.stroke();
+      for (let j = 0; j < 2; j++) if (Math.random() < .5) {
+        const t = Math.random(), px = ax + (bx - ax) * t, py = ay + (by - ay) * t, a = rand(0, 6.3), l = rand(1.5, 4);
+        c.strokeStyle = "#fff4dc"; c.lineWidth = 1; c.beginPath(); c.moveTo(px, py); c.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); c.stroke();
+      }
+      c.globalAlpha = 1;
+    } else {
+      // 溝：深色，旁邊一道亮的毛邊
+      c.strokeStyle = m.fuzz; c.globalAlpha = .55; c.lineWidth = 4.6;
+      c.beginPath(); c.moveTo(ax + nx, ay + ny); c.lineTo(bx + nx, by + ny); c.stroke();
+      c.globalAlpha = .9; c.strokeStyle = m.groove; c.lineWidth = 2.6 * power;
+      c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke();
+      c.globalAlpha = 1;
+    }
     if (Math.random() < .35) {
       // 被抓起來的纖維
       const t = Math.random(), px = ax + (bx - ax) * t, py = ay + (by - ay) * t, a = Math.atan2(dy, dx) + rand(-1.2, 1.2), l = rand(2, 6);
@@ -246,8 +270,12 @@ function hole(x, y, big) {
     for (let i = 0; i < 6; i++) { c.fillStyle = i % 2 ? "#fff" : m.hole; c.beginPath(); c.arc(x + rand(-r, r) * .6, y + rand(-r, r) * .5, r * rand(.35, .6), 0, Math.PI * 2); c.fill(); }
     if (Math.random() < .3) spring(x, y);
   } else {
+    // 瓦楞紙破洞：紙條之間的深縫露出來，邊緣是撕開的毛邊
     c.fillStyle = m.hole; c.fill();
-    c.strokeStyle = m.fuzz; c.lineWidth = 2; c.stroke();
+    c.strokeStyle = "rgba(0,0,0,.25)"; c.lineWidth = 1;
+    for (let yy = y - r; yy < y + r; yy += 7) { c.beginPath(); c.moveTo(x - r * .7, yy); c.lineTo(x + r * .7, yy); c.stroke(); }
+    c.strokeStyle = m.fuzz; c.lineWidth = 2.2; c.stroke();
+    for (let i = 0; i < 14; i++) { const a = rand(0, 6.3), rr = r * rand(.8, 1.1); c.strokeStyle = "#fbecd0"; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr * .8); c.lineTo(x + Math.cos(a) * (rr + rand(2, 5)), y + Math.sin(a) * (rr + rand(2, 5)) * .8); c.stroke(); }
   }
   G.holes++;
   FX.rip(); FX.vibrate(25);
@@ -266,7 +294,7 @@ function spawnDebris(x, y, nx, ny) {
   const fluff = m.debris === "fluff";
   G.particles.push({
     x, y, vx: nx * side * sp + rand(-60, 60), vy: ny * side * sp - rand(80, 240), rot: rand(0, 6.3), vr: rand(-8, 8),
-    w: fluff ? rand(4, 8) : rand(4, 12), h: fluff ? 0 : rand(2, 4), fluff,
+    w: fluff ? rand(4, 8) : rand(7, 16), h: fluff ? 0 : rand(1.6, 3), fluff,
     color: fluff ? (Math.random() < .7 ? "#ffffff" : m.fuzz) : (Math.random() < .6 ? m.base2 : m.fuzz),
     floor: Ht - rand(4, 46)
   });
