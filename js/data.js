@@ -11,7 +11,7 @@ const CATS = {
   grey: {
     name: "架構師", style: "優雅派", desc: "長長的弧線，慢條斯理",
     fur: "#aab3bd", stripe: "#8c96a2", belly: "#eef1f4", ear: "#f2b8c0", accessory: "headset",
-    spacing: 11, speed: 0.95,
+    spacing: 11, speed: 1.25,
     finish: "lick"                    // 抓完：坐好舔爪子
   },
   white: {

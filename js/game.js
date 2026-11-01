@@ -54,6 +54,22 @@ function unlockState(m) {
   else if (u.type === "paintingsOrDecember") { if (new Date().getMonth() === 11) return { done: true, frac: 1 }; have = save.paintings; }
   return { done: have >= n, frac: have / n };
 }
+// 圖卡下面的「下一個解鎖」：讓人知道再抓一張會有什麼
+function progressText(m) {
+  const u = m.unlock, n = u.n || 1;
+  if (u.type === "paintings" || u.type === "paintingsOrDecember") return `${Math.min(save.paintings, n)}/${n}`;
+  if (u.type === "allcats") return `${save.cats.length}/3`;
+  if (u.type === "time") return T("{0}/{1} 分鐘", Math.floor(save.time / 60), Math.round(n / 60));
+  if (u.type === "holes") return `${Math.min(save.maxHoles, n)}/${n}`;
+  return "";
+}
+function nextUnlockLine() {
+  const locked = MATERIALS.filter(m => !save.unlocked.includes(m.id) && !m.secret);
+  const m = locked.find(x => x.ready) || locked[0];
+  if (!m) return "";
+  return m.ready ? T("下一個解鎖：{0} {1}（{2}）", m.icon, W(m.name), progressText(m))
+    : T("下一個材質：{0} {1}・敬請期待（{2}）", m.icon, W(m.name), progressText(m));
+}
 function unlockText(m) {
   const u = m.unlock; if (!u) return "";
   return T(UNLOCK_TEXT[u.type], u.type === "time" ? Math.round(u.n / 60) : u.n);
@@ -286,9 +302,10 @@ function onMove(x, y) {
   if (G.catId === "orange") {
     const vx = x - s.ax, vy = y - s.ay;
     if (!s.dir) {
-      if (Math.hypot(vx, vy) < 14) return;
+      // 方向還沒決定前也先畫，手指一碰就有反應；6px 後鎖定方向
+      if (Math.hypot(vx, vy) < 6) { G.paw.x = x; G.paw.y = y; claw(prev.x, prev.y, x, y); track(prev); return; }
       const a = Math.round(Math.atan2(vy, vx) / (Math.PI / 4)) * (Math.PI / 4);
-      s.dir = { x: Math.cos(a), y: Math.sin(a) };
+      s.dir = { x: Math.cos(a), y: Math.sin(a) }; s.ax = prev.x; s.ay = prev.y;
     }
     const d = vx * s.dir.x + vy * s.dir.y;
     G.paw.x = s.ax + s.dir.x * d; G.paw.y = s.ay + s.dir.y * d;
@@ -353,7 +370,7 @@ function loop(now) {
   if (G.down && !G.done) {
     if (G.catId === "grey") {
       const prev = { x: G.paw.x, y: G.paw.y };
-      G.paw.x += (G.fx - G.paw.x) * .14; G.paw.y += (G.fy - G.paw.y) * .14;
+      G.paw.x += (G.fx - G.paw.x) * .18; G.paw.y += (G.fy - G.paw.y) * .18;
       if (Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y) > .4) { claw(prev.x, prev.y, G.paw.x, G.paw.y); track(prev); }
       else FX.scratch(0);
     }
@@ -427,6 +444,7 @@ function finish() {
     cancelAnimationFrame(raf); FX.stop();
     show("cardScreen");
     $("#cardImg").src = card.url; $("#saveBtn").href = card.url;
+    $("#nextUnlock").textContent = nextUnlockLine();
     shareFile = card.file;
     save.album.unshift({ img: card.thumb, title: card.title, date: Date.now() });
     save.album = save.album.slice(0, 12);

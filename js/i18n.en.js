@@ -36,6 +36,9 @@ I18N.en = {
   "一張畫抓出 {0} 個洞": "Make {0} holes in one painting",
   "12 月限定，或抓完 {0} 張畫": "December only, or finish {0} paintings",
   "解鎖新材質：{0}！": "New unlock: {0}!",
+  "下一個解鎖：{0} {1}（{2}）": "Next unlock: {0} {1} ({2})",
+  "下一個材質：{0} {1}・敬請期待（{2}）": "Next: {0} {1} · coming soon ({2})",
+  "{0}/{1} 分鐘": "{0}/{1} min",
   "太好了！": "Yay!",
   // 抓的畫面
   "用手指在紙上用力抓！": "Scratch the paper with your finger!",
