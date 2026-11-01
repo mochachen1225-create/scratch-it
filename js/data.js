@@ -32,7 +32,7 @@ const MATERIALS = [
     under: "#fff7ea", stamp: "#ffc7d4", mode: "hex", debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
   // 泡泡紙：一格格小泡泡，抓過去連續啵啵啵
   { id: "bubble", name: "泡泡紙", icon: "🫧", ready: true, unlock: { type: "totalHoles", n: 3000 },
-    base: "#d9ecf7", base2: "#bcd9ec", groove: "#a9cbe0", fuzz: "#ffffff", hole: "#eef7fc", stamp: "#f39bb0",
+    base: "#d9ecf7", base2: "#bcd9ec", groove: "#a9cbe0", fuzz: "#ffffff", hole: "#eef7fc", under: "#eef7fc", stamp: "#f39bb0",
     mode: "bubble", debris: "plastic", sound: { type: "highpass", freq: 1800, q: 0.7, crackle: 0, gain: 0.3 } },
   { id: "castle", name: "紙箱城堡", icon: "🏰", ready: false, unlock: { type: "allcats" } },
   { id: "rug", name: "長毛地毯", icon: "🧶", ready: false, unlock: { type: "time", n: 300 } },
@@ -64,11 +64,33 @@ const ART_STYLES = {
 
 // AI 插畫（Katie 用 Gemini App 生成）。window.NO_ART = true 時全部改用程式畫的版本
 const ART = window.NO_ART ? null : {
-  orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp" },
-  grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp", pawOut: "art/grey_paw_out.webp", pawIn: "art/grey_paw_out.webp" },
-  white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp" },
+  orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", tail: "art/orange_tail.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp" },
+  // 架構師的伸爪圖還沒有（之前那張其實是小弟的掌），先用程式畫的掌
+  grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp" },
+  white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp", pawOut: "art/white_paw_out.webp", pawIn: "art/white_paw_in.webp" },
   flutes: "art/tex_flutes.jpg"
 };
+// 刮刮卡收集：每張紙下面藏一張驚喜插畫（AI 圖），抓開一定比例就「找到了」
+// kind：caught 被抓包、treasure 寶物（可以送給貓）、prank 整人卡；rarity：1 普通、2 稀有、3 超稀有
+// sticker：去背貼紙圖（放在暖色底上），其他是滿版場景
+const CARDS = [
+  { id: "wand", kind: "treasure", rarity: 1, sticker: true, name: "逗貓棒", say: "找到逗貓棒！" },
+  { id: "ball", kind: "treasure", rarity: 1, sticker: true, name: "鈴鐺球", say: "找到鈴鐺球和毛線球！" },
+  { id: "kibble", kind: "treasure", rarity: 1, sticker: true, name: "一包飼料", say: "找到一包飼料！" },
+  { id: "fish", kind: "treasure", rarity: 1, sticker: true, name: "魚魚抱枕", say: "找到魚魚抱枕！" },
+  { id: "chief_treat", kind: "caught", rarity: 2, name: "總編偷舔肉泥", say: "被抓到了！總編在偷舔肉泥" },
+  { id: "kit_kibble", kind: "caught", rarity: 2, name: "小弟頭卡飼料袋", say: "被抓到了！小弟頭卡在飼料袋裡" },
+  { id: "arch_cup", kind: "caught", rarity: 2, name: "架構師推杯子", say: "被抓到了！架構師在推杯子" },
+  { id: "box_trio", kind: "caught", rarity: 2, name: "紙箱大會", say: "被抓到了！三隻在開紙箱大會" },
+  { id: "cattree", kind: "treasure", rarity: 2, name: "貓跳台", say: "找到貓跳台！" },
+  { id: "poop", kind: "prank", rarity: 2, name: "是……禮物嗎？", say: "是……禮物嗎？" },
+  { id: "fridge", kind: "caught", rarity: 3, name: "半夜偷開冰箱", say: "被抓到了！半夜偷開冰箱" },
+  { id: "catbed", kind: "treasure", rarity: 3, name: "高級貓窩", say: "找到高級貓窩！" }
+];
+const REWARD = { id: "kiss", name: "全收集親親合照" };
+const RARITY = { 1: { name: "普通", stars: "★", weight: 60, color: "#a9e5c6" }, 2: { name: "稀有", stars: "★★", weight: 30, color: "#aed5ff" }, 3: { name: "超稀有", stars: "★★★", weight: 10, color: "#ffd96a" } };
+const cardImg = id => ART ? `art/cards/${id}.webp` : null;
+
 // 背景音樂（Katie 用 Gemini 做的 AI 音樂）：一般用慵懶的 Sunbeams，小弟和泡泡紙用輕快的 Zoomies
 const MUSIC = { calm: "audio/sunbeams.mp3", busy: "audio/zoomies.mp3", zoomies: "audio/gallop.mp3" };
 

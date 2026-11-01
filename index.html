@@ -31,6 +31,7 @@
   .btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
   .btn:disabled { opacity: .45; }
   .btn-pink { background: var(--pink); } .btn-mint { background: var(--mint); } .btn-blue { background: var(--blue); } .btn-ghost { background: var(--sheet); }
+  #bookBtn, #albumBtn { white-space: nowrap; font-size: 17px; }
   .row2 { display: flex; gap: 10px; width: 100%; max-width: 340px; } .row2 .btn { font-size: 18px; padding: 12px 6px; }
   .linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: 15px; cursor: pointer; padding: 4px; }
   .small { font-size: 14px; color: var(--muted); margin: 0; text-align: center; }
@@ -88,6 +89,7 @@
   #dance { position: fixed; inset: 0; z-index: 85; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
     background: radial-gradient(circle, rgba(255,217,106,.92), rgba(253,243,227,.94) 70%); }
   #dance p { font-size: 30px; font-weight: 700; margin: 0; text-shadow: 3px 3px 0 #fff; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
+  #dance p { text-align: center; padding: 0 18px; font-size: 26px; line-height: 1.3; }
   #dance small { color: var(--muted); font-size: 14px; }
   .dancers { display: flex; align-items: flex-end; gap: 4px; height: 170px; }
   .dancer { width: 110px; transform-origin: 50% 100%; }
@@ -98,13 +100,41 @@
   @keyframes hop { 0%, 100% { transform: translateY(0) scale(1.08, .9); } 45% { transform: translateY(-46px) scale(.94, 1.08); } 55% { transform: translateY(-46px) scale(.94, 1.08); } }
   @keyframes sway { 0%, 100% { transform: rotate(-12deg) translateY(0); } 25% { transform: rotate(0) translateY(-20px); } 50% { transform: rotate(12deg) translateY(0); } 75% { transform: rotate(0) translateY(-20px); } }
   @keyframes crazy { 0% { transform: translateY(0) rotate(0) scale(1.1, .88); } 30% { transform: translateY(-60px) rotate(-20deg) scale(.9, 1.1); } 55% { transform: translateY(-30px) rotate(25deg); } 80% { transform: translateY(-8px) rotate(-6deg) scale(1.05, .95); } 100% { transform: translateY(0) rotate(0) scale(1.1, .88); } }
+  .dancer.jump { animation: bigjump .55s ease-out !important; }
+  @keyframes bigjump { 0% { transform: scale(1.15, .8); } 40% { transform: translateY(-110px) scale(.9, 1.15) rotate(-8deg); } 100% { transform: none; } }
+  .dancer.still { animation: wobble 1.2s ease-in-out infinite !important; }
+  @keyframes wobble { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+  #dance { background-size: cover; background-position: center; }
+  #dance .gift img { width: 150px; height: 150px; object-fit: contain; animation: drop .6s cubic-bezier(.3,1.6,.5,1); filter: drop-shadow(3px 4px 0 rgba(0,0,0,.15)); }
+  /* 找到驚喜插畫 */
+  #reveal { position: fixed; z-index: 40; left: 50%; top: max(64px, calc(env(safe-area-inset-top) + 56px)); transform: translateX(-50%); width: min(92vw, 380px);
+    display: flex; gap: 10px; align-items: center; background: var(--sheet); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 4px 4px 0 var(--ink); padding: 8px; pointer-events: none; }
+  #reveal.go { animation: revealIn 2.8s ease-out forwards; }
+  @keyframes revealIn { 0% { transform: translateX(-50%) scale(.3); opacity: 0; } 10% { transform: translateX(-50%) scale(1.08); opacity: 1; } 15% { transform: translateX(-50%) scale(1); } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-20px); } }
+  #reveal img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 2px solid var(--ink); background: #fff3d6; }
+  #reveal b { display: block; font-size: 19px; line-height: 1.25; }
+  #reveal small { display: inline-block; margin-top: 4px; font-size: 13px; border-radius: 8px; padding: 1px 8px; border: 1.5px solid var(--ink); }
+  /* 收集冊 */
+  .book { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+  .slot { position: relative; border: 2.5px solid var(--ink); border-radius: 12px; padding: 4px 4px 6px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; overflow: hidden; }
+  .slot img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: #fff3d6; display: block; }
+  .slot span { font-size: 12.5px; line-height: 1.2; text-align: center; }
+  .slot.unk img { filter: brightness(0) opacity(.18); }
+  .slot.unk i { position: absolute; top: 30%; left: 0; right: 0; text-align: center; font-style: normal; font-size: 34px; font-weight: 700; color: #fff; text-shadow: 2px 2px 0 var(--ink); }
+  .slot.reward { width: 100%; background: linear-gradient(135deg, #ffd96a, #ffb8c6); flex-direction: row; padding: 8px; }
+  .slot.reward img { width: 96px; } .slot.reward span { font-size: 16px; font-weight: 700; flex: 1; }
+  .slot.reward.unk i { position: static; font-size: 28px; color: inherit; text-shadow: none; }
+  .bag { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .bagitem { display: flex; align-items: center; gap: 10px; background: var(--sheet); border: 2.5px solid var(--ink); border-radius: 14px; padding: 6px 10px; box-shadow: 2px 2px 0 var(--ink); }
+  .bagitem img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
+  .bagitem span { flex: 1; font-size: 16px; } .bagitem .btn { width: auto; font-size: 16px; padding: 8px 14px; }
   #finish { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(253,243,227,.55); }
   #finish svg { width: 220px; height: 220px; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
   #finish p { font-size: 26px; margin: 4px 0 0; animation: purr 0.5s ease-in-out infinite alternate; }
   @keyframes drop { from { transform: translateY(-80px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes purr { from { transform: translateX(-1px); } to { transform: translateX(1px); } }
 
-  /* 圖卡、收藏冊 */
+  /* 圖卡、作品集 */
   #cardImg { width: 100%; max-width: 380px; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); -webkit-touch-callout: default; }
   .album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
   .album img { width: 100%; border: 2.5px solid var(--ink); border-radius: 8px; cursor: pointer; display: block; }
@@ -129,10 +159,10 @@
   <div class="label" data-t>選材質</div>
   <div id="mats" class="mats"></div>
   <button id="startBtn" class="btn" data-t>🐾 開始抓！</button>
-  <button id="albumBtn" class="btn btn-ghost"></button>
+  <div class="row2"><button id="albumBtn" class="btn btn-ghost"></button><button id="bookBtn" class="btn btn-ghost"></button></div>
   <button id="texBtn" class="linkbtn" hidden></button>
   <div class="foot"><button id="langBtn" class="linkbtn"></button>・<button id="verBtn" class="linkbtn"></button></div>
-  <p id="aiNote" class="small" data-t>貓咪插畫、貓掌和背景音樂由 AI 生成（Gemini），也有程式畫的版本</p>
+  <p id="aiNote" class="small" data-t>貓咪插畫、驚喜插畫、貓掌和背景音樂由 AI 生成（Gemini），也有程式畫的版本</p>
   <div id="changes" class="small" hidden></div>
 </section>
 
@@ -162,29 +192,43 @@
   <button id="againBtn" class="btn" data-t>🔁 再抓一張</button>
   <div class="row2">
     <button id="homeBtn" class="btn btn-ghost" data-t>🐱 換貓／材質</button>
-    <button id="albumBtn2" class="btn btn-ghost" data-t>🖼️ 收藏冊</button>
+    <button id="albumBtn2" class="btn btn-ghost" data-t>🖼️ 作品集</button>
   </div>
+  <button id="bookBtn2" class="btn btn-ghost"></button>
 </section>
 
-<!-- 收藏冊 -->
+<!-- 作品集 -->
 <section id="albumScreen" class="screen">
-  <h2 style="margin:8px 0 0" data-t>🖼️ 收藏冊</h2>
+  <h2 style="margin:8px 0 0" data-t>🖼️ 作品集</h2>
   <p class="small" data-t>最近 12 張抓痕畫，只存在這支手機裡</p>
   <div id="album" class="album"></div>
   <p id="albumEmpty" class="small" data-t>還沒有作品，快去抓一張！</p>
   <button id="albumBack" class="btn btn-ghost" data-t>← 回首頁</button>
 </section>
 
-<div id="viewer" class="overlay" hidden><div class="card"><img id="viewerImg" alt=""><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
+<!-- 收集冊 -->
+<section id="bookScreen" class="screen">
+  <h2 id="bookTitle" style="margin:8px 0 0"></h2>
+  <p class="small" data-t>每張紙下面都藏著一張驚喜插畫，抓開三成就收進來</p>
+  <div id="book" class="book"></div>
+  <button id="rewardSlot" class="slot reward"></button>
+  <div class="label" data-t>🎁 寶物袋</div>
+  <div id="bag" class="bag"></div>
+  <p id="bagEmpty" class="small" data-t>找到的寶物會放在這裡，可以送給貓咪</p>
+  <button id="bookBack" class="btn btn-ghost" data-t>← 回首頁</button>
+</section>
+
+<div id="reveal" hidden></div>
+<div id="viewer" class="overlay" hidden><div class="card"><img id="viewerImg" alt=""><p id="viewerTxt" style="margin:0;font-size:17px"></p><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
 <div id="unlockPop" class="overlay" hidden><div class="card"><div id="unlockIc" class="unlock-ic"></div><p id="unlockTxt" style="margin:0;font-size:20px"></p><button id="unlockOk" class="btn" data-t>太好了！</button></div></div>
-<div id="dance" hidden><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
+<div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.3.0"></script>
-<script src="js/i18n.en.js?v=0.3.0"></script>
-<script src="js/data.js?v=0.3.0"></script>
-<script src="js/cats.js?v=0.3.0"></script>
-<script src="js/fx.js?v=0.3.0"></script>
-<script src="js/game.js?v=0.3.0"></script>
+<script src="js/i18n.js?v=0.4.0"></script>
+<script src="js/i18n.en.js?v=0.4.0"></script>
+<script src="js/data.js?v=0.4.0"></script>
+<script src="js/cats.js?v=0.4.0"></script>
+<script src="js/fx.js?v=0.4.0"></script>
+<script src="js/game.js?v=0.4.0"></script>
 </body>
 </html>

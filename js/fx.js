@@ -112,5 +112,19 @@ const FX = {
       const fade = setInterval(() => { a.volume = Math.max(0, a.volume - 0.05); if (a.volume <= 0) { clearInterval(fade); a.pause(); if (this.wantTrack) this.music(this.wantTrack); } }, 40);
     }
   },
+  // 找到驚喜插畫：越稀有音越多
+  reveal(rarity = 1) {
+    const notes = [523, 659, 784, 1047, 1319, 1568].slice(0, 2 + rarity * 1.5 | 0);
+    notes.forEach((f, i) => this.tone(f, 0.3, { type: "triangle", vol: 0.14, at: i * 0.09 }));
+    if (rarity >= 3) this.burst(0.8, 3000, 9000, 0.12, "highpass");
+  },
+  // 喵：每隻貓音高不一樣（小弟最高）
+  meow(id) {
+    const p = id === "white" ? 1.3 : id === "grey" ? .85 : 1;
+    this.tone(480 * p, 0.16, { type: "triangle", vol: 0.16, to: 820 * p });
+    this.tone(820 * p, 0.32, { type: "triangle", vol: 0.14, at: 0.13, to: 420 * p });
+  },
+  // 送貓窩被無視：洩氣的下降音
+  sad() { [392, 370, 349, 262].forEach((f, i) => this.tone(f, i === 3 ? 0.6 : 0.28, { type: "triangle", vol: 0.13, at: i * 0.3, to: i === 3 ? 230 : null })); },
   vibrate(ms) { if (!this.muted && navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
 };

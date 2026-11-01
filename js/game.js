@@ -1,6 +1,10 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 const CHANGES = [
+  "刮刮卡收集：每張紙下面藏一張驚喜插畫，抓開就收進收集冊（12 張＋全收集獎勵）",
+  "找到的寶物可以送給貓咪",
+  "跳舞時點貓會喵一聲跳更高；肉球章蓋滿 30 個變成大愛心",
+  "小弟和總編的插畫換新（貓掌、尾巴）",
   "暴衝時間：連續狂抓會進入 8 秒暴衝，洞多三倍、畫面跟著晃",
   "一整排碎光會大慶祝；長按可以蓋肉球印章",
   "解鎖新材質或破紀錄，三隻貓出來跳舞",
@@ -35,10 +39,10 @@ if (LANG === "en") document.title = "Scratch It!";
 
 /* ================= 存檔（只存在這支手機） ================= */
 const SAVE_KEY = "scratch-it-save";
-const save = Object.assign({ paintings: 0, time: 0, cats: [], maxHoles: 0, totalHoles: 0, frenzy: 0, tex: "code", unlocked: ["cardboard"], album: [], cat: "orange", mat: "cardboard", no: 0, muted: false },
+const save = Object.assign({ paintings: 0, time: 0, cats: [], maxHoles: 0, totalHoles: 0, frenzy: 0, tex: "code", unlocked: ["cardboard"], album: [], cat: "orange", mat: "cardboard", no: 0, muted: false, found: {}, bag: {}, reward: false },
   store.get(SAVE_KEY, {}));
 function persist() {
-  // 收藏冊的圖比較大：存不下就丟掉最舊的再試
+  // 作品集的圖比較大：存不下就丟掉最舊的再試
   while (!store.set(SAVE_KEY, save) && save.album.length) save.album.pop();
 }
 FX.init(save.muted);
@@ -139,7 +143,10 @@ renderHome();
     mats.appendChild(b);
   }
   if (!save.unlocked.includes(save.mat)) save.mat = "cardboard";
-  $("#albumBtn").textContent = T("🖼️ 收藏冊（{0}）", save.album.length);
+  $("#albumBtn").textContent = T("🖼️ 作品集（{0}）", save.album.length);
+  $("#bookBtn").hidden = !ART;
+  const bagN = CARDS.reduce((a, cd) => a + (save.bag[cd.id] || 0), 0);
+  $("#bookBtn").textContent = T("📒 收集冊 {0}/{1}", foundCount(), CARDS.length) + (bagN ? " 🎁" : "");
   // 貓抓板花紋：程式畫／AI 圖，給 Katie 比較
   $("#texBtn").hidden = !ART || save.mat !== "cardboard";
   $("#texBtn").textContent = save.tex === "ai" ? T("貓抓板花紋：AI 圖（點一下換程式畫）") : T("貓抓板花紋：程式畫（點一下換 AI 圖）");
@@ -237,7 +244,12 @@ function startGame() {
     // 暴衝時間：一局最多一次。抓到隨機的進度點（30～65%）時正在連續抓 4 秒以上，或抓到某個隨機時間點（小弟比較容易）
     zoom: 0, zoomUntil: 0, zoomP: rand(.3, .65), zoomAt: Math.random() < (save.cat === "white" ? .7 : .3) ? rand(8000, 16000) : Infinity
   };
-  if (m.mode === "bubble") setupBubbles(); else { setupHoles(); paintUnder(m); }
+  // 驚喜插畫的位置：畫面中間一個正方形
+  const ps = Math.min(Wd - 28, Ht * .5);
+  G.pic = { x: (Wd - ps) / 2, y: Ht * .47 - ps / 2, s: ps };
+  G.picTot = 0; G.picHit = 0; G.found = false;
+  if (m.mode === "bubble") setupBubbles(); else setupHoles();
+  paintUnder(m);
   texImg = null;
   if (m.id === "cardboard" && save.tex === "ai" && ART) { imgCache[ART.flutes] && imgCache[ART.flutes].then(im => { texImg = im; if (G && im) { paintBase(m); } }); }
   paintBase(m);
@@ -268,12 +280,77 @@ function setupHoles() {
     const [x, y] = hexPos(i, j);
     if (x > 6 && x < Wd - 6 && y > 6 && y < Ht - 6) { h.pTotal[patchOf(i, j)]++; h.total++; } else h.punched[j * cols + i] = 2;   // 2 = 邊框外
   }
+  // 哪些區塊在驚喜插畫上：碎掉的比例決定「找到了沒」
+  h.inPic = new Uint8Array(pc * pr); const P = G.pic;
+  for (let b = 0; b < pr; b++) for (let a = 0; a < pc; a++) {
+    const x = (a * PATCH + PATCH / 2) * HEX, y = (b * PATCH + PATCH / 2) * ROWH;
+    if (h.pTotal[b * pc + a] && x > P.x && x < P.x + P.s && y > P.y && y < P.y + P.s) { h.inPic[b * pc + a] = 1; G.picTot++; }
+  }
 }
-// 好玩很多：紙下面藏著一張大圖案，碎掉的區塊會一塊塊把它露出來
+// 紙下面藏著一張驚喜插畫（刮刮卡）；沒有 AI 圖時用程式畫的大圖案
 const MOTIFS = ["heart", "fish", "paw", "catface", "star"];
+function pickCard() {
+  // 依稀有度抽；還沒收集到的機率高一點
+  const pool = CARDS.map(cd => ({ cd, w: RARITY[cd.rarity].weight / CARDS.filter(x => x.rarity === cd.rarity).length * (save.found[cd.id] ? 1 : 1.6) }));
+  let r = Math.random() * pool.reduce((a, x) => a + x.w, 0);
+  for (const x of pool) if ((r -= x.w) <= 0) return x.cd;
+  return pool[0].cd;
+}
 function paintUnder(m) {
   G.under = makeLayer(); const c = G.under.getContext("2d"); c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.fillStyle = m.under; c.fillRect(0, 0, Wd, Ht);
+  // 底層也鋪滿整齊的小點點（密集感）
+  c.fillStyle = "rgba(60,40,20,.22)";
+  for (let j = 0; j * ROWH < Ht; j++) for (let i = 0; i * HEX < Wd; i++) { const [x, y] = hexPos(i, j); c.beginPath(); c.arc(x, y, 1.4, 0, Math.PI * 2); c.fill(); }
+  G.card = ART ? pickCard() : null;
+  if (!G.card) { drawMotif(c, m); return; }
+  const P = G.pic, cd = G.card, g = G;
+  c.fillStyle = cd.sticker ? "#fff3d6" : "#fffaf2"; roundRect(c, P.x, P.y, P.s, P.s, 18); c.fill();
+  loadImg(cardImg(cd.id)).then(im => {
+    if (g !== G) return;
+    if (!im) { G.card = null; drawMotif(c, m); return; }
+    c.save(); roundRect(c, P.x, P.y, P.s, P.s, 18); c.clip();
+    if (cd.sticker) {
+      // 貼紙：暖色底＋放射狀光芒，貼紙放中間
+      c.fillStyle = "#ffe9b8";
+      for (let i = 0; i < 16; i++) { const a0 = i / 16 * Math.PI * 2; c.beginPath(); c.moveTo(P.x + P.s / 2, P.y + P.s / 2); c.arc(P.x + P.s / 2, P.y + P.s / 2, P.s, a0, a0 + Math.PI / 16); c.fill(); }
+      const k = Math.min(P.s * .86 / im.width, P.s * .86 / im.height);
+      c.drawImage(im, P.x + (P.s - im.width * k) / 2, P.y + (P.s - im.height * k) / 2, im.width * k, im.height * k);
+    } else c.drawImage(im, P.x, P.y, P.s, P.s);
+    c.restore();
+    c.lineWidth = 5; c.strokeStyle = INK; roundRect(c, P.x, P.y, P.s, P.s, 18); c.stroke();
+    peekCorner();
+    // 好玩很多：超稀有卡的紙會閃閃發光
+    if (cd.rarity === 3) { G.sparks = []; setTimeout(() => G === g && bubble(T("這張紙在閃閃發光…✨"), Wd / 2 - 90, P.y - 30), 600); }
+  });
+}
+// 掀起一小塊：開局紙上已經破了一個小洞、紙片翹起來，偷看得到插畫的一部分
+function peekCorner() {
+  const P = G.pic, c = dctx, m = G.m;
+  const x = P.x + P.s / 2 + rand(-.2, .2) * P.s, y = P.y + P.s / 2 + rand(-.2, .2) * P.s;
+  const pts = []; for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, r = rand(24, 32); pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r * .85]); }
+  const path = () => { c.beginPath(); pts.forEach(([u, v], i) => c[i ? "lineTo" : "moveTo"](u, v)); c.closePath(); };
+  c.save(); path(); c.clip(); c.drawImage(G.under, 0, 0, Wd, Ht); c.restore();
+  c.strokeStyle = m.fuzz; c.lineWidth = 3; path(); c.stroke();
+  // 翹起來的紙片：接在洞的右上邊
+  const [ax, ay] = pts[14], [bx, by] = pts[17];
+  c.save(); c.shadowColor = "rgba(0,0,0,.28)"; c.shadowBlur = 6; c.shadowOffsetX = -2; c.shadowOffsetY = 3;
+  c.fillStyle = m.base2 || m.base; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.lineTo(x + 46, y - 42); c.closePath(); c.fill(); c.restore();
+  c.strokeStyle = m.fuzz; c.lineWidth = 1.5; c.beginPath(); c.moveTo(ax, ay); c.lineTo(x + 46, y - 42); c.lineTo(bx, by); c.stroke();
+  track2(x, y);
+}
+// 插畫上的區塊碎掉三成：找到了！
+const REVEAL_AT = .3;
+function checkReveal() {
+  if (!G.card || G.found || G.picHit < G.picTot * REVEAL_AT) return;
+  G.found = true;
+  const cd = G.card, r = RARITY[cd.rarity], el = $("#reveal");
+  el.innerHTML = `<img src="${cardImg(cd.id)}" alt=""><div><b>${T(cd.say)}</b><small style="background:${r.color}">${r.stars} ${T(r.name)}${save.found[cd.id] ? "" : "・" + T("新卡片！")}</small></div>`;
+  el.hidden = false; el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  clearTimeout(el._t); el._t = setTimeout(() => { el.hidden = true; }, 2800);
+  FX.reveal(cd.rarity); FX.vibrate([20, 40, 20]);
+}
+function drawMotif(c, m) {
   const sofa = m.id === "sofa";
   const fill = sofa ? "#ffc7d4" : "#e9c27f", line = sofa ? "#e58fa5" : "#6b4a26";
   const S = Math.min(Wd, Ht) * .4, cx = Wd / 2, cy = Ht * .48;
@@ -300,9 +377,6 @@ function paintUnder(m) {
     for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? S * .42 : S; c.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); }
     c.closePath(); c.fill(); c.stroke();
   }
-  // 底層也鋪滿整齊的小點點（密集感）
-  c.fillStyle = "rgba(60,40,20,.22)";
-  for (let j = 0; j * ROWH < Ht; j++) for (let i = 0; i * HEX < Wd; i++) { const [x, y] = hexPos(i, j); c.beginPath(); c.arc(x, y, 1.4, 0, Math.PI * 2); c.fill(); }
 }
 function setupBubbles() {
   const r = 8.5, gap = 19, list = [], grid = new Map(), rowLeft = [], rowTot = [], rowDone = [];
@@ -310,7 +384,8 @@ function setupBubbles() {
     for (let x = (j % 2 ? gap : gap / 2) + 2; x < Wd - gap * .4; x += gap) {
       const k = `${Math.floor(x / gap)},${Math.floor(y / gap)}`;
       if (!grid.has(k)) grid.set(k, []);
-      grid.get(k).push(list.length); list.push({ x, y, r, j, popped: false });
+      const P = G.pic, inPic = x > P.x && x < P.x + P.s && y > P.y && y < P.y + P.s; if (inPic) G.picTot++;
+      grid.get(k).push(list.length); list.push({ x, y, r, j, inPic, popped: false });
       rowLeft[j] = (rowLeft[j] || 0) + 1; rowTot[j] = rowLeft[j];
     }
   G.bub = { r, gap, list, grid, rowLeft, rowTot, rowDone, total: list.length };
@@ -345,6 +420,7 @@ function neighbors(p) {
 function burstPatch(p, chain) {
   const h = G.hx; if (h.pDone[p] || !G) return;
   h.pDone[p] = 1; G.bursts++;
+  if (h.inPic[p]) { G.picHit++; checkReveal(); }
   const pc = h.pc, pi = p % pc, pj = Math.floor(p / pc), c = dctx, m = G.m;
   let full = true;
   for (let i = 0; i < pc; i++) { const q = pj * pc + i; if (h.pTotal[q] && !h.pDone[q]) { full = false; break; } }
@@ -404,8 +480,12 @@ function popNear(x, y) {
         setTimeout(() => G && !G.done && rowClear(y, b.gap * .9), 160 + rest.length * 45);
       }
       // 破掉的泡泡：扁扁皺皺
-      const c = dctx; c.fillStyle = G.m.hole; c.beginPath(); c.arc(q.x, q.y, q.r * .92, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = "rgba(120,170,205,.8)"; c.lineWidth = 1; c.beginPath();
+      const c = dctx;
+      // 破掉的泡泡露出下面的插畫：圓圈放大到蓋住泡泡之間的縫，整片啵完就是完整的圖
+      c.save(); c.beginPath(); c.arc(q.x, q.y, b.gap * .6, 0, Math.PI * 2); c.clip(); c.drawImage(G.under, 0, 0, Wd, Ht);
+      c.fillStyle = "rgba(255,255,255,.18)"; c.fill(); c.restore();
+      if (q.inPic) { G.picHit++; checkReveal(); }
+      c.strokeStyle = "rgba(120,170,205,.4)"; c.lineWidth = 1; c.beginPath();
       for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + rand(-.3, .3), rr = q.r * rand(.3, .85); c[i ? "lineTo" : "moveTo"](q.x + Math.cos(a) * rr, q.y + Math.sin(a) * rr); }
       c.closePath(); c.stroke();
       track2(q.x, q.y);
@@ -602,13 +682,24 @@ function loop(now) {
     for (let i = 0; i < 22; i++) { spawnDebris(rand(0, Wd), rand(-40, Ht * .3), rand(-.3, .3), 1); const p = G.particles[G.particles.length - 1]; if (p) { p.vy = rand(100, 400); } }
   }
   updateParticles(dt);
+  if (G.sparks && !G.found && !G.done && Math.random() < .25) { const P = G.pic; G.sparks.push({ x: P.x + rand(0, P.s), y: P.y + rand(0, P.s), t: 0 }); }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(base, 0, 0); ctx.drawImage(dmg, 0, 0); ctx.drawImage(pile, 0, 0);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   for (const p of G.particles) drawParticle(ctx, p);
+  if (G.sparks) drawSparks(dt);
   updateMeter();
   if (!G.done && G.progress >= 1) finish();
   raf = requestAnimationFrame(loop);
+}
+function drawSparks(dt) {
+  for (let i = G.sparks.length - 1; i >= 0; i--) {
+    const k = G.sparks[i]; k.t += dt; if (k.t > 1.1) { G.sparks.splice(i, 1); continue; }
+    const a = Math.sin(k.t / 1.1 * Math.PI), r = 3 + 6 * a;
+    ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#fff6c2"; ctx.translate(k.x, k.y - k.t * 10); ctx.beginPath();
+    for (let j = 0; j < 8; j++) { const rr = j % 2 ? r * .3 : r, an = j * Math.PI / 4; ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); }
+    ctx.closePath(); ctx.shadowColor = "#ffd96a"; ctx.shadowBlur = 8; ctx.fill(); ctx.restore();
+  }
 }
 function sneeze() {
   FX.sneeze(); bubble(T("哈啾！"), G.paw.x, G.paw.y - 60);
@@ -628,10 +719,16 @@ function updateMeter() {
 // 長按蓋印章：第一個蓋在手指下，之後沿著向日葵螺旋往外蓋，密密麻麻排滿
 function stampAt(pr) {
   const n = pr.n++, a = n * 2.399, r = 13 * Math.sqrt(n);
-  if (n > 90) return;
+  if (n === 30) { heartStamp(pr); return; }
+  if (n > 30) return;
   const x = pr.x + Math.cos(a) * r, y = pr.y + Math.sin(a) * r;
-  if (x < 8 || y < 8 || x > Wd - 8 || y > Ht - 8) return;
-  const m = G.m, c = dctx, k = .95, rot = rand(-.35, .35);
+  pawPrint(x, y, rand(-.35, .35), .95);
+  FX.stamp(n); FX.vibrate(8);
+  if (n === 0) bubble(T("蓋章！"), x, y - 70);
+}
+function pawPrint(x, y, rot, k) {
+  if (!G || x < 8 || y < 8 || x > Wd - 8 || y > Ht - 8) return;
+  const m = G.m, c = dctx;
   // 先在肉球的位置打洞（算進抓爛度），再蓋上淡淡的肉球
   const spots = [[0, 4, 6], [-7, -5, 3], [-2.5, -9, 3], [2.5, -9, 3], [7, -5, 3]];
   for (const [dx, dy] of spots) {
@@ -644,9 +741,20 @@ function stampAt(pr) {
   for (const [dx, dy] of spots.slice(1)) { c.beginPath(); c.ellipse(dx, dy, 2.6, 3.2, 0, 0, Math.PI * 2); c.fill(); }
   c.restore();
   track2(x, y); G.stamps++;
-  FX.stamp(n); FX.vibrate(8);
-  if (n === 0) bubble(T("蓋章！"), x, y - 70);
-  else if (n === 30) bubble(T("蓋滿滿！"), x, y - 90);
+}
+// 好玩很多：蓋滿 30 個，整團變成一顆大愛心
+function heartStamp(pr) {
+  const cx = pr.x, cy = pr.y - 6, k = 5.6, c = dctx, g = G;
+  const hp = t => [cx + k * 16 * Math.pow(Math.sin(t), 3), cy - k * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))];
+  c.save(); c.globalAlpha = .4; c.fillStyle = "#ff8fab"; c.beginPath();
+  for (let i = 0; i <= 60; i++) { const [x, y] = hp(i / 60 * Math.PI * 2); c[i ? "lineTo" : "moveTo"](x, y); }
+  c.fill(); c.restore();
+  for (let i = 0; i < 26; i++) setTimeout(() => {
+    if (G !== g || G.done) return;
+    const t = i / 26 * Math.PI * 2, [x, y] = hp(t);
+    pawPrint(x, y, t + Math.PI, .85); FX.stamp(30 + i * 2);
+  }, i * 28);
+  setTimeout(() => { if (G === g) { FX.unlockChime(); FX.vibrate([20, 30, 60]); const b = bubble(T("💗 大愛心！"), cx - 60, cy - 130); b.classList.add("big"); G.hearts = (G.hearts || 0) + 1; } }, 26 * 28);
 }
 // 一整排都碎光：像消掉一排一樣大慶祝
 function rowClear(y, hgt) {
@@ -708,7 +816,16 @@ function finish() {
   const record = save.paintings > 2 && G.holes > save.maxHoles;
   save.maxHoles = Math.max(save.maxHoles, G.holes);
   save.totalHoles += G.holes;
-  const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(), no: save.no, holes: G.holes, chain: G.bestChain || 0, zoom: G.zoom ? 1 : 0, rows: G.rows, stamps: G.stamps };
+  const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(), no: save.no, holes: G.holes, chain: G.bestChain || 0, zoom: G.zoom ? 1 : 0, rows: G.rows, stamps: G.stamps,
+    card: G.card ? G.card.id : null, found: G.found };
+  // 刮刮卡：找到就收進收集冊，寶物放進寶物袋
+  let firstFind = false, complete = false;
+  if (G.found) {
+    const id = G.card.id; firstFind = !save.found[id];
+    save.found[id] = (save.found[id] || 0) + 1;
+    if (G.card.kind === "treasure") save.bag[id] = (save.bag[id] || 0) + 1;
+    if (!save.reward && CARDS.every(cd => save.found[cd.id])) { save.reward = true; complete = true; }
+  }
   const fresh = checkUnlocks();
   G.rainBand = Ht * .3; G.rainUntil = performance.now() + 1100;
   setTimeout(diveIn, 1100);
@@ -719,14 +836,18 @@ function finish() {
     show("cardScreen");
     $("#cardImg").src = card.url; $("#saveBtn").href = card.url;
     $("#nextUnlock").textContent = nextUnlockLine();
+    $("#bookBtn2").textContent = T("📒 收集冊 {0}/{1}", foundCount(), CARDS.length);
     shareFile = card.file;
     save.album.unshift({ img: card.thumb, title: card.title, date: Date.now() });
     save.album = save.album.slice(0, 12);
     persist();
     G = null;
     // 解鎖新材質或破紀錄：三隻貓出來跳舞
-    if (fresh.length) dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
+    if (complete) dance(T("全收集！")).then(() => showCard(REWARD, true));
+    else if (fresh.length) dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
     else if (record) dance(T("新紀錄！{0} 個洞", info.holes.toLocaleString()));
+    else if (info.card && !info.found) toast(T("差一點就找到了！下面藏著一張{0}卡 {1}", T(RARITY[CARDS.find(cd => cd.id === info.card).rarity].name), RARITY[CARDS.find(cd => cd.id === info.card).rarity].stars), 3200);
+    else if (firstFind && info.card && CARDS.find(cd => cd.id === info.card).kind === "treasure") toast(T("🎁 寶物放進寶物袋了，可以到收集冊送給貓咪"), 3200);
   }, 3300);
 }
 // 貓跳進紙屑堆：畫在爪痕那一層，再用紙屑堆蓋住，只露出耳朵（小弟只露尾巴）
@@ -770,16 +891,76 @@ function showUnlock(m) {
 }
 $("#unlockOk").addEventListener("click", () => { $("#unlockPop").hidden = true; FX.tap(); });
 // 跳舞慶祝：三隻貓的坐姿插畫用程式動起來（彈跳、擺動、壓扁），配〈Zoomies〉最熱鬧的一段
-function dance(text) {
+// 點跳舞的貓：喵一聲、跳更高；點旁邊結束
+function dance(text, { pose = "sit", bg = null, img = null, music = true } = {}) {
   const d = $("#dance");
-  d.querySelector(".dancers").innerHTML = Object.keys(CATS).map(id => `<div class="dancer d-${id}">${catImg(id, "sit", "dancepic")}</div>`).join("");
+  d.querySelector(".dancers").innerHTML = Object.keys(CATS).map(id => `<div class="dancer d-${id}${pose === "tail" ? " still" : ""}" data-id="${id}">${catImg(id, pose, "dancepic")}</div>`).join("");
+  d.querySelector(".gift").innerHTML = img ? `<img src="${img}" alt="">` : "";
+  d.style.backgroundImage = bg ? `linear-gradient(rgba(253,243,227,.35), rgba(253,243,227,.55)), url(${bg})` : "";
   d.querySelector("p").textContent = text;
-  d.hidden = false; FX.danceMusic(5); FX.unlockChime();
+  d.hidden = false;
+  if (music) { FX.danceMusic(5); FX.unlockChime(); } else FX.sad();
   return new Promise(res => {
-    const done = () => { if (d.hidden) return; d.hidden = true; FX.danceStop(); res(); };
-    d.onclick = done; setTimeout(done, 4800);
+    let t;
+    const done = () => { if (d.hidden) return; clearTimeout(t); d.hidden = true; FX.danceStop(); res(); };
+    const arm = ms => { clearTimeout(t); t = setTimeout(done, ms); };
+    d.onclick = e => {
+      const k = e.target.closest(".dancer");
+      if (!k) return done();
+      k.classList.remove("jump"); void k.offsetWidth; k.classList.add("jump");
+      FX.meow(k.dataset.id); arm(3000);
+    };
+    arm(4800);
   });
 }
+const foundCount = () => CARDS.filter(cd => save.found[cd.id]).length;
+/* ================= 收集冊＋寶物袋 ================= */
+function openBook() {
+  const box = $("#book"); box.innerHTML = "";
+  for (const cd of CARDS) {
+    const n = save.found[cd.id] || 0, r = RARITY[cd.rarity];
+    const el = document.createElement("button"); el.className = "slot" + (n ? "" : " unk");
+    el.style.background = r.color;
+    el.innerHTML = `<img src="${cardImg(cd.id)}" alt="">${n ? "" : "<i>？</i>"}<span>${n ? W(cd.name) : r.stars}</span>`;
+    el.addEventListener("click", () => { FX.tap(); if (n) showCard(cd); else toast(T("還沒找到：{0} {1}", T(r.name), r.stars)); });
+    box.appendChild(el);
+  }
+  const rw = $("#rewardSlot");
+  rw.className = "slot reward" + (save.reward ? "" : " unk");
+  rw.innerHTML = save.reward ? `<img src="${cardImg(REWARD.id)}" alt=""><span>${T(REWARD.name)}</span>` : `<i>🔒</i><span>${T("全收集獎勵：找齊 {0} 張", CARDS.length)}</span>`;
+  rw.onclick = () => { FX.tap(); if (save.reward) showCard(REWARD, true); };
+  $("#bookTitle").textContent = T("📒 收集冊 {0}/{1}", foundCount(), CARDS.length);
+  renderBag();
+  show("bookScreen");
+}
+function showCard(cd, reward) {
+  $("#viewerImg").src = cardImg(cd.id);
+  $("#viewerTxt").textContent = reward ? T("🎉 全收集獎勵！謝謝你陪三隻貓抓了這麼多") : `${RARITY[cd.rarity].stars} ${T(RARITY[cd.rarity].name)}・${T(cd.say)}`;
+  $("#viewer").hidden = false;
+}
+function renderBag() {
+  const bag = $("#bag"); bag.innerHTML = "";
+  const items = CARDS.filter(cd => cd.kind === "treasure" && save.bag[cd.id] > 0);
+  $("#bagEmpty").hidden = items.length > 0;
+  for (const cd of items) {
+    const el = document.createElement("div"); el.className = "bagitem";
+    el.innerHTML = `<img src="${cardImg(cd.id)}" alt=""><span>${W(cd.name)} ×${save.bag[cd.id]}</span><button class="btn btn-pink">${T("送給貓咪")}</button>`;
+    el.querySelector("button").addEventListener("click", () => gift(cd));
+    bag.appendChild(el);
+  }
+}
+// 送寶物給貓：大部分開心跳舞；貓跳台會爬上去跳；高級貓窩……三隻都不理，跑去鑽紙箱
+function gift(cd) {
+  save.bag[cd.id]--; persist(); FX.tap();
+  let p;
+  if (cd.id === "catbed") p = dance(T("送了高級貓窩……三隻全跑去鑽紙箱了"), { pose: "tail", img: cardImg(cd.id), music: false });
+  else if (cd.id === "cattree") p = dance(T("三隻爬上貓跳台跳舞！"), { bg: cardImg(cd.id) });
+  else p = dance(T("收到{0}，三隻好開心！", W(cd.name)), { img: cardImg(cd.id) });
+  p.then(renderBag);
+}
+$("#bookBtn").addEventListener("click", () => { FX.tap(); openBook(); });
+$("#bookBtn2").addEventListener("click", () => { FX.tap(); openBook(); });
+$("#bookBack").addEventListener("click", () => { FX.tap(); show("home"); renderHome(); });
 
 /* ================= 爪痕畫圖卡（1080×1350） ================= */
 let shareFile = null;
@@ -815,15 +996,21 @@ async function buildCard(info) {
   const im = (await loadImg(ART && ART[info.cat] && ART[info.cat].lie)) || await svgImage(catSVG(info.cat, "sit"));
   if (im) { const k = Math.min(190 / im.width, 190 / im.height); x.drawImage(im, 60 + (190 - im.width * k) / 2, 990 + (190 - im.height * k) / 2, im.width * k, im.height * k); }
   x.fillStyle = "#3a2e2a"; x.textAlign = "left";
-  x.font = F(64, true); x.fillText(title, 270, 1068, 760);
-  x.font = F(38); x.fillStyle = "#6a5a52";
-  x.fillText(T("{0}的抓痕畫・{1}・{2} 秒", W(cat.name), W(cat.style), info.sec), 272, 1132, 760);
+  x.font = F(60, true); x.fillText(title, 270, 1050, 760);
+  x.font = F(36); x.fillStyle = "#6a5a52";
+  x.fillText(T("{0}的抓痕畫・{1}・{2} 秒", W(cat.name), W(cat.style), info.sec), 272, 1108, 760);
   const holesTxt = info.mat === "bubble" ? T("啵了 {0} 顆泡泡", info.holes.toLocaleString()) : T("這張打了 {0} 個洞", info.holes.toLocaleString());
-  x.font = F(32); x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${holesTxt}`, 272, 1184, 760);
+  x.font = F(32); x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${holesTxt}`, 272, 1156, 760);
+  if (info.card) {
+    const cd = CARDS.find(q => q.id === info.card);
+    x.fillStyle = "#3a2e2a";
+    // 沒找到也告訴你錯過了多稀有的卡，讓人想再抓一張
+    x.fillText(info.found ? `🎁 ${T("找到：{0}", W(cd.name))} ${RARITY[cd.rarity].stars}` : `❓ ${T("差一點！下面藏著一張{0}卡 {1}", T(RARITY[cd.rarity].name), RARITY[cd.rarity].stars)}`, 272, 1200, 760);
+  }
   const extra = [info.chain >= 3 && T("最長連鎖 ×{0}", info.chain), info.rows && T("清光 {0} 排", info.rows), info.zoom && T("暴衝 ×{0}", info.zoom), info.stamps >= 5 && T("肉球章 ×{0}", info.stamps)].filter(Boolean);
-  if (extra.length) { x.fillStyle = "#c06a3a"; x.fillText(extra.join("・"), 272, 1228, 760); }
-  x.textAlign = "center"; x.fillStyle = "#3a2e2a"; x.font = F(34, true); x.fillText(T("抓爛它！"), W0 / 2, 1280);
-  x.font = F(26); x.fillStyle = "#4a7fc0"; x.fillText(GAME_URL, W0 / 2, 1310);
+  if (extra.length) { x.fillStyle = "#c06a3a"; x.fillText(extra.join("・"), 272, 1244, 760); }
+  x.textAlign = "center"; x.fillStyle = "#3a2e2a"; x.font = F(32, true); x.fillText(T("抓爛它！"), W0 / 2, 1294);
+  x.font = F(26); x.fillStyle = "#4a7fc0"; x.fillText(GAME_URL, W0 / 2, 1328);
   const blob = await new Promise(r => c.toBlob(r, "image/png"));
   const url = URL.createObjectURL(blob);
   const t = document.createElement("canvas"); t.width = 360; t.height = 450; t.getContext("2d").drawImage(c, 0, 0, 360, 450);
@@ -837,12 +1024,12 @@ $("#shareBtn").addEventListener("click", async () => {
   toast(T("長按圖片就能存下來分享 🐾"), 3000);
 });
 
-/* ================= 收藏冊 ================= */
+/* ================= 作品集（收藏的抓痕畫） ================= */
 function openAlbum() {
   const box = $("#album"); box.innerHTML = "";
   save.album.forEach(a => {
     const im = document.createElement("img"); im.src = a.img; im.alt = a.title;
-    im.addEventListener("click", () => { $("#viewerImg").src = a.img; $("#viewer").hidden = false; FX.tap(); });
+    im.addEventListener("click", () => { $("#viewerImg").src = a.img; $("#viewerTxt").textContent = ""; $("#viewer").hidden = false; FX.tap(); });
     box.appendChild(im);
   });
   $("#albumEmpty").hidden = save.album.length > 0;
