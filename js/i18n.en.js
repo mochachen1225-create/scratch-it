@@ -18,6 +18,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "沙發變得很難抓破：要重複抓，先起皺、勾出線頭、扯開縫，最後「啪」裂開露出棉花（感謝玩家回報）": "The sofa is tough now: scratch again and again until it wrinkles, snags, splits and finally rips open to the stuffing (thanks to player feedback)",
   "瓦楞紙改成沿著紙條扒開的長條抓痕（感謝玩家回報）": "Cardboard now tears into long streaks along its strips (thanks to player feedback)",
   "刮刮卡收集：每張紙下面藏一張驚喜插畫，抓開就收進收集冊（12 張＋全收集獎勵）": "Scratch cards: a surprise picture hides under every sheet. Uncover it to collect it (12 + a bonus)",
   "找到的寶物可以送給貓咪": "Give the treasures you find to the cats",

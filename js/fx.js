@@ -1,3 +1,4 @@
+const rand2 = (a, b) => a + Math.random() * (b - a);
 // 聲音與震動：全部用 Web Audio 現場合成，不用音檔
 const FX = {
   ctx: null, noise: null, scratchGain: null, filter: null, muted: false, mat: null,
@@ -128,5 +129,9 @@ const FX = {
   sad() { [392, 370, 349, 262].forEach((f, i) => this.tone(f, i === 3 ? 0.6 : 0.28, { type: "triangle", vol: 0.13, at: i * 0.3, to: i === 3 ? 230 : null })); },
   // 整人卡：低低的「噗～」
   pfft() { this.tone(110, 0.45, { type: "sawtooth", vol: 0.1, to: 70 }); this.burst(0.4, 500, 160, 0.4, "lowpass"); },
+  // 沙發勾到線頭：「嘣」
+  twang(v = 1) { const f = rand2(220, 300); this.tone(f, 0.16, { type: "triangle", vol: 0.09 * v, to: f * .55 }); },
+  // 沙發裂開：「啪嘶」＋棉花「噗」
+  tear() { this.burst(0.12, 2600, 700, 0.32); this.tone(150, 0.12, { type: "sine", vol: 0.12, to: 80, at: 0.04 }); },
   vibrate(ms) { if (!this.muted && navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
 };

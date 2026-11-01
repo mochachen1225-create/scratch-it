@@ -29,7 +29,7 @@ const MATERIALS = [
     under: "#a8773f", stamp: "#9b5a3c", mode: "strip", debris: "strip", sound: { type: "bandpass", freq: 2600, q: 1.1, crackle: 0.5, gain: 0.5 } },
   { id: "sofa", name: "沙發", icon: "🛋️", ready: true, unlock: { type: "paintings", n: 3 },
     base: "#5f9e96", base2: "#4f8a83", groove: "#3f6f69", fuzz: "#e9f3f1", hole: "#fff7ea",
-    under: "#fff7ea", stamp: "#ffc7d4", mode: "hex", debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
+    under: "#fff7ea", stamp: "#ffc7d4", mode: "hex", tough: true, ease: 2, debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
   // 泡泡紙：一格格小泡泡，抓過去連續啵啵啵
   { id: "bubble", name: "泡泡紙", icon: "🫧", ready: true, unlock: { type: "totalHoles", n: 5000 },
     base: "#d9ecf7", base2: "#bcd9ec", groove: "#a9cbe0", fuzz: "#ffffff", hole: "#eef7fc", under: "#eef7fc", stamp: "#f39bb0",

@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.5.0";
+const VERSION = "0.5.1";
 const CHANGES = [
+  "沙發變得很難抓破：要重複抓，先起皺、勾出線頭、扯開縫，最後「啪」裂開露出棉花（感謝玩家回報）",
   "瓦楞紙改成沿著紙條扒開的長條抓痕（感謝玩家回報）",
   "同一張卡找到 3 次會變閃亮版；整人卡會噗一聲",
   "刮刮卡收集：每張紙下面藏一張驚喜插畫，抓開就收進收集冊（12 張＋全收集獎勵）",
@@ -296,7 +297,8 @@ const hexPos = (i, j) => [i * HEX + (OFF && j % 2 ? HEX / 2 : 0), Y0 + j * ROWH]
 const patchOf = (i, j) => Math.floor(j / PATCH) * G.hx.pc + Math.floor(i / PX);
 function setupHoles() {
   const cols = Math.ceil(Wd / HEX) + 1, rows = Math.ceil(Ht / ROWH) + 1, pc = Math.ceil(cols / PX), pr = Math.ceil(rows / PATCH);
-  const h = G.hx = { cols, rows, pc, punched: new Uint8Array(cols * rows), pTotal: new Uint16Array(pc * pr), pHit: new Uint16Array(pc * pr), pDone: new Uint8Array(pc * pr), total: 0 };
+  const h = G.hx = { cols, rows, pc, punched: new Uint8Array(cols * rows), pTotal: new Uint16Array(pc * pr), pHit: new Uint16Array(pc * pr), pDone: new Uint8Array(pc * pr), total: 0,
+    dmg: new Float32Array(cols * rows), last: new Float32Array(cols * rows) };   // 沙發：每格的破壞程度、上次被抓的時間
   for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
     const [x, y] = hexPos(i, j);
     if (x > 6 && x < Wd - 6 && y > 6 && y < Ht - 6) { h.pTotal[patchOf(i, j)]++; h.total++; } else h.punched[j * cols + i] = 2;   // 2 = 邊框外
@@ -307,6 +309,8 @@ function setupHoles() {
     const x = (a * PX + PX / 2) * HEX, y = Y0 + (b * PATCH + PATCH / 2) * ROWH;
     if (h.pTotal[b * pc + a] && x > P.x && x < P.x + P.s && y > P.y && y < P.y + P.s) { h.inPic[b * pc + a] = 1; G.picTot++; }
   }
+  G.picCellTot = 0; G.picRip = 0;
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const [x, y] = hexPos(i, j); if (h.punched[j * cols + i] !== 2 && x > P.x && x < P.x + P.s && y > P.y && y < P.y + P.s) G.picCellTot++; }
 }
 // 紙下面藏著一張驚喜插畫（刮刮卡）；沒有 AI 圖時用程式畫的大圖案
 const MOTIFS = ["heart", "fish", "paw", "catface", "star"];
@@ -374,9 +378,13 @@ function peekCorner() {
 }
 // 插畫上的區塊碎掉三成：找到了！
 const REVEAL_AT = .3;
+const inPicRect = (x, y) => { const P = G.pic; return x > P.x && x < P.x + P.s && y > P.y && y < P.y + P.s; };
 function checkReveal() {
-  if (!G.card || G.found || G.picHit < G.picTot * REVEAL_AT) return;
+  if (!G.card || G.found) return;
+  // 沙發很難碎，改看插畫上裂開的格子：裂開快兩成就「啪」一大片撕開
+  if (G.m.tough ? (G.picRip || 0) < G.picCellTot * .18 : G.picHit < G.picTot * REVEAL_AT) return;
   G.found = true;
+  if (G.m.tough) openPic();
   const cd = G.card, r = RARITY[cd.rarity], el = $("#reveal");
   // 同一張卡第 3 次找到：解鎖閃亮版
   const n = save.found[cd.id] || 0, tag = !n ? "・" + T("新卡片！") : n + 1 === SHINY_AT ? "・" + T("✨ 閃亮版解鎖！") : "";
@@ -390,6 +398,15 @@ function checkReveal() {
   }
 }
 const SHINY_AT = 3;
+function openPic() {
+  const h = G.hx, P = G.pic, pc = h.pc, cx = P.x + P.s / 2, cy = P.y + P.s / 2, list = [];
+  for (let q = 0; q < h.inPic.length; q++) if (h.inPic[q] && !h.pDone[q]) {
+    const x = ((q % pc) * PX + PX / 2) * HEX, y = Y0 + (Math.floor(q / pc) * PATCH + PATCH / 2) * ROWH;
+    list.push([Math.hypot(x - cx, y - cy), q]);
+  }
+  list.sort((a, b) => a[0] - b[0]).slice(0, 9).forEach(([, q], n) => setTimeout(() => G && !G.done && burstPatch(q, n ? 1 : 0), n * 80));
+  FX.tear(); FX.vibrate([30, 20, 60]);
+}
 function drawMotif(c, m) {
   const sofa = m.id === "sofa";
   const fill = sofa ? "#ffc7d4" : "#e9c27f", line = sofa ? "#e58fa5" : "#6b4a26";
@@ -442,8 +459,10 @@ function punchCell(i, j) {
   if (i < 0 || j < 0 || i >= h.cols || j >= h.rows) return false;
   const k = j * h.cols + i; if (h.punched[k]) return false;
   const p = patchOf(i, j); if (h.pDone[p]) return false;
-  h.punched[k] = 1; G.holes++; h.pHit[p]++;
   const [cx, cy] = hexPos(i, j), c = dctx, m = G.m;
+  if (m.tough && !toughHit(h, k, cx, cy)) return false;
+  h.punched[k] = 1; G.holes++; h.pHit[p]++;
+  if (m.tough && inPicRect(cx, cy)) { G.picRip = (G.picRip || 0) + 1; checkReveal(); }
   if (m.mode === "strip") {
     // 長條抓痕：紙條表面被刮開，露出深色的縫，上下是翹起來的淺色毛邊；相鄰的格子連成一長條
     c.fillStyle = m.hole; c.fillRect(cx - HEX / 2 - .6, cy - 1.5, HEX + 1.2, 3);
@@ -454,6 +473,15 @@ function punchCell(i, j) {
       c.strokeStyle = m.fuzz; c.lineWidth = 1.4; c.lineCap = "round"; c.beginPath();
       c.moveTo(cx, cy - 2); c.quadraticCurveTo(cx + rand(2, 5), cy - rand(4, 7), cx + rand(5, 9), cy - rand(2, 6)); c.stroke();
     }
+  } else if (m.tough && !matArt(m, "hole")) {
+    // 沙發裂開：露出白白的棉花，四周是扯斷的線頭
+    c.fillStyle = m.hole;
+    for (let n = 0; n < 4; n++) { c.beginPath(); c.arc(cx + rand(-1.6, 1.6), cy + rand(-1.6, 1.6), rand(1.8, 2.8), 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = m.fuzz; c.lineWidth = .9; c.lineCap = "round";
+    for (let n = 0; n < 3; n++) { const a = rand(0, 6.3); c.beginPath(); c.moveTo(cx + Math.cos(a) * 3, cy + Math.sin(a) * 3); c.lineTo(cx + Math.cos(a) * 5.5, cy + Math.sin(a) * 5.5); c.stroke(); }
+    if (Math.random() < .12) spawnDebris(cx, cy, rand(-1, 1), -1);
+    if (performance.now() - (G.lastTear || 0) > 70) { G.lastTear = performance.now(); FX.tear(); }
+    FX.vibrate(22);
   } else if (matArt(m, "hole")) {
     // 洞的插畫（例如沙發露出棉花、布邊毛邊），每個洞轉個隨機角度
     const im = matArt(m, "hole"), sz = HEX * 1.15;
@@ -464,8 +492,33 @@ function punchCell(i, j) {
   }
   track2(cx, cy);
   if (Math.random() < .1) spawnDebris(cx, cy, rand(-1, 1), -1);
-  if (h.pHit[p] >= h.pTotal[p] * .85) burstPatch(p, 0);
+  if (h.pHit[p] >= h.pTotal[p] * (m.tough ? .7 : .85)) burstPatch(p, 0);
   return true;
+}
+// 沙發布很難抓破：同一格要重複抓好幾次，越快越用力（暴衝時加倍）
+// ①起皺、淺抓痕 ②起毛球、線頭被勾出來 ③扯開一條縫 ④「啪」裂開、棉花跑出來
+function toughHit(h, k, cx, cy) {
+  const now = performance.now();
+  if (now - h.last[k] < 110) return false;      // 同一筆劃過去只算一次
+  h.last[k] = now;
+  const pw = (.6 + Math.min(G.speed || 0, 2.5) * .5) * (G.zoom === 1 ? 2 : 1);
+  const before = h.dmg[k], after = h.dmg[k] = Math.min(4, before + pw);
+  const st = Math.floor(after);
+  if (st >= 4) return true;
+  if (st > Math.floor(before)) {
+    const c = dctx, m = G.m, a = rand(-.5, .5);
+    if (st === 1) { c.strokeStyle = "rgba(0,0,0,.16)"; c.lineWidth = 1; c.beginPath(); c.moveTo(cx - 3 * Math.cos(a), cy - 3 * Math.sin(a)); c.lineTo(cx + 3 * Math.cos(a), cy + 3 * Math.sin(a)); c.stroke(); }
+    else if (st === 2) {
+      c.strokeStyle = m.fuzz; c.lineWidth = 1; c.lineCap = "round"; c.beginPath(); c.arc(cx, cy, 1.4, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); c.moveTo(cx, cy); c.quadraticCurveTo(cx + rand(-3, 3), cy + 3, cx + rand(-4, 4), cy + rand(4, 7)); c.stroke();
+      if (Math.random() < .25) FX.twang(.6); FX.vibrate(6);
+    } else {
+      c.strokeStyle = m.groove; c.lineWidth = 2.2; c.lineCap = "round"; c.beginPath(); c.moveTo(cx - 3.5 * Math.cos(a), cy - 3.5 * Math.sin(a)); c.lineTo(cx + 3.5 * Math.cos(a), cy + 3.5 * Math.sin(a)); c.stroke();
+      c.strokeStyle = m.fuzz; c.lineWidth = .8; c.beginPath(); c.moveTo(cx - 3 * Math.cos(a), cy - 3 * Math.sin(a) - 1.6); c.lineTo(cx + 3 * Math.cos(a), cy + 3 * Math.sin(a) - 1.6); c.stroke();
+      if (Math.random() < .35) FX.twang(1); FX.vibrate(12);
+    }
+  }
+  return false;
 }
 function punchArea(x, y, r) {
   // 小弟的大爪：一爪打穿一整圈（泡泡紙就是一次壓破一圈泡泡）
@@ -515,7 +568,8 @@ function burstPatch(p, chain) {
     G.chainEl = bubble(T("連鎖 ×{0}！", chain + 1), cx, cy - 40);
   }
   else if (Math.random() < .25) bubble(T("啵！"), cx, cy - 40);
-  if (m.id === "sofa" && Math.random() < .25) spring(cx, cy);
+  // 彈簧偶爾蹦出來（一次最多一個，隔 2 秒）
+  if (m.id === "sofa" && chain === 0 && Math.random() < .3 && performance.now() - (G.lastSpring || 0) > 2000) { G.lastSpring = performance.now(); spring(cx, cy); }
   // 一排碎了六成：剩下的區塊從左到右一路掃過去碎掉，整排清光
   if (!G.rowDone[pj]) {
     let done = 0, tot = 0;
@@ -668,6 +722,7 @@ function track(prev) {
   s.path += d;
   const now = performance.now();
   const dt = Math.max(16, now - G.lastT); G.lastT = now;
+  G.speed = (G.speed || 0) * .7 + d / dt * .3;
   FX.scratch(d / dt);
   if (d > 0.5) { G.scratchMs += Math.min(dt, 60); G.lastMove = now; }
   if (G.zoom === 1 && d > 0.5) claw(prev.x + 46, prev.y + 14, G.paw.x + 46, G.paw.y + 14, -1.8);
@@ -688,7 +743,7 @@ cv.addEventListener("pointerdown", e => {
   if (!G || G.done || G.pid !== null) return;
   e.preventDefault(); FX.unlock();
   G.pid = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch {}
-  G.down = true; G.fx = e.clientX; G.fy = e.clientY;
+  G.down = true; G.fx = e.clientX; G.fy = e.clientY; G.lx = e.clientX; G.ly = e.clientY;
   G.paw.x = e.clientX; G.paw.y = e.clientY;
   G.stroke = { ax: e.clientX, ay: e.clientY, dir: null, path: 0 };
   G.press = { x: e.clientX, y: e.clientY, t: performance.now(), n: 0, next: 0 };
@@ -699,7 +754,7 @@ cv.addEventListener("pointerdown", e => {
 cv.addEventListener("pointermove", e => {
   if (!G || e.pointerId !== G.pid || G.done) return;
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-  for (const ev of (evs.length ? evs : [e])) { G.fx = ev.clientX; G.fy = ev.clientY; onMove(ev.clientX, ev.clientY); }
+  for (const ev of (evs.length ? evs : [e])) { G.fx = ev.clientX; G.fy = ev.clientY; if (!G.m.tough) onMove(ev.clientX, ev.clientY); }
 });
 const lift = e => {
   if (!G || e.pointerId !== G.pid) return;
@@ -718,9 +773,15 @@ function loop(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (!G) return;
   if (G.down && !G.done) {
+    if (G.m.tough && G.catId !== "grey") {
+      // 沙發：爪子勾住布，貓掌被拖住、慢半拍才跟上手指
+      const ox = G.lx, oy = G.ly;
+      G.lx += (G.fx - G.lx) * .3; G.ly += (G.fy - G.ly) * .3;
+      if (Math.hypot(G.lx - ox, G.ly - oy) > .3) onMove(G.lx, G.ly); else FX.scratch(0);
+    }
     if (G.catId === "grey") {
-      const prev = { x: G.paw.x, y: G.paw.y };
-      G.paw.x += (G.fx - G.paw.x) * .18; G.paw.y += (G.fy - G.paw.y) * .18;
+      const prev = { x: G.paw.x, y: G.paw.y }, k = G.m.tough ? .16 : .18;
+      G.paw.x += (G.fx - G.paw.x) * k; G.paw.y += (G.fy - G.paw.y) * k;
       if (Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y) > .4) { claw(prev.x, prev.y, G.paw.x, G.paw.y); track(prev); }
       else FX.scratch(0);
     }
@@ -757,9 +818,22 @@ function loop(now) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   for (const p of G.particles) drawParticle(ctx, p);
   if (G.sparks) drawSparks(dt);
+  if (G.m.tough && G.down && !G.done) drawPull();
   updateMeter();
   if (!G.done && G.progress >= 1) finish();
   raf = requestAnimationFrame(loop);
+}
+// 布被爪子勾住往手指方向拉：貓掌四周畫出放射狀的拉扯皺褶，放開就彈回去（不畫）
+function drawPull() {
+  const px = G.paw.x, py = G.paw.y + 6, lag = Math.min(1, Math.hypot(G.fx - px, G.fy - py) / 60);
+  ctx.save(); ctx.lineCap = "round";
+  for (let i = 0; i < 9; i++) {
+    const a = i / 9 * Math.PI * 2 + .3, r0 = 16, r1 = 38 + lag * 22;
+    ctx.strokeStyle = `rgba(20,50,45,${.1 + lag * .12})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px + Math.cos(a) * r1, py + Math.sin(a) * r1); ctx.quadraticCurveTo(px + Math.cos(a + .15) * (r0 + r1) / 2, py + Math.sin(a + .15) * (r0 + r1) / 2, px + Math.cos(a) * r0, py + Math.sin(a) * r0); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.1)"; ctx.lineWidth = 1; ctx.stroke();
+  }
+  ctx.restore();
 }
 function drawSparks(dt) {
   for (let i = G.sparks.length - 1; i >= 0; i--) {
@@ -778,7 +852,7 @@ function sneeze() {
 }
 function updateMeter() {
   if (!G) return;
-  G.progress = clamp(coverage() / .5 * G.cat.speed, 0, 1);
+  G.progress = clamp(coverage() / .5 * G.cat.speed * (G.m.ease || 1), 0, 1);
   $("#meterFill").style.width = G.progress * 100 + "%";
   $("#meterTxt").textContent = T("抓爛度 {0}%", Math.floor(G.progress * 100));
   $("#doneBtn").disabled = G.progress < .15;
