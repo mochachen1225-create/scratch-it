@@ -14,3 +14,17 @@
 - chief_tail：總編「躲進紙箱只露尾巴」（橘條紋尾巴），三隻的尾巴版到齊。
 - surprises/：驚喜插畫。surprise_fridge（三隻半夜偷開冰箱，總編戴眼鏡叼魚、架構師戴耳麥在冰箱層架上、小弟戴黃帽抱牛奶盒；2048×2048 滿版場景，沒有字）；treasure_wand（逗貓棒＋碎紙板）、treasure_ball（鈴鐺球＋毛線球＋碎紙板），這兩張是 2752×1536 橫式貼紙、白底白邊，要裁切＋去背。
 - 還沒有：surprise_chief_treat、surprise_kit_kibble、surprise_arch_cup、treasure_kibble、treasure_fish。
+
+## 第四批（11/1，Katie 用 Gemini App 生成，AI 圖，要標示；保留程式版）
+都放 surprises/。2048×2048 滿版場景，除了兩張貼紙；都沒有字或品牌。
+- surprise_chief_treat：總編（戴眼鏡）在聚光燈下偷舔肉泥，舌頭吐出來、冒冷汗。
+- surprise_kit_kibble：小弟頭卡在飼料袋裡，只看到黃帽、屁股和尾巴，飼料撒一地、水碗打翻。
+- surprise_arch_cup：架構師（戴耳麥）在桌上用掌推杯子。**問題：畫了兩條尾巴**，要修（程式擦掉一條）或重畫。
+- surprise_box_trio：清單外的一張，三隻跟一個紙箱玩：架構師在箱裡、總編揮掌、小弟驚訝。可當額外驚喜或紙箱梗用。
+- treasure_kibble：一包飼料（貼紙，2752×1536 橫式白底白邊，要裁切＋去背）。
+- treasure_fish：魚形抱枕（貼紙，同上）。
+- treasure_cattree：貓跳台（房間場景，沒有貓）。
+- treasure_catbed：高級公主貓窩（房間場景，沒有貓）。梗：送了貓不理，跑去鑽紙箱。
+- prank_poop：整人卡。小弟笑著坐在貓砂盆旁，盆裡一坨有笑臉的卡通便便，不噁心。
+- reward_kiss：全收集獎勵。摩卡親總編，架構師、小弟在旁邊抱她，三隻配件都對；臉正常。
+- 還沒有：surprise_fridge_b、treasure_wand_b／treasure_ball_b（非必要）、paws/arch_paw_claws_out（架構師銀灰伸爪）。
