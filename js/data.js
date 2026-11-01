@@ -64,10 +64,12 @@ const ART_STYLES = {
 
 // AI 插畫（Katie 用 Gemini App 生成）。window.NO_ART = true 時全部改用程式畫的版本
 const ART = window.NO_ART ? null : {
-  orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp" },
-  grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp" },
+  orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp" },
+  grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp", pawOut: "art/grey_paw_out.webp", pawIn: "art/grey_paw_out.webp" },
   white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp" },
   flutes: "art/tex_flutes.jpg"
 };
+// 背景音樂（Katie 用 Gemini 做的 AI 音樂）：一般用慵懶的 Sunbeams，小弟和泡泡紙用輕快的 Zoomies
+const MUSIC = { calm: "audio/sunbeams.mp3", busy: "audio/zoomies.mp3", zoomies: "audio/gallop.mp3" };
 
 const GAME_URL_DEFAULT = "https://mochachen1225-create.github.io/scratch-it/";

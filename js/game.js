@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 const CHANGES = [
+  "加上背景音樂和插畫版貓掌",
   "密密麻麻的小洞：抓滿一塊就「啵」整片碎掉，還會連鎖",
   "新材質：泡泡紙，抓過去啵啵啵",
   "抓完貓會跳進紙屑堆，淹到只剩耳朵",
@@ -40,7 +41,7 @@ function persist() {
 FX.init(save.muted);
 document.addEventListener("pointerdown", () => FX.unlock(), { capture: true });
 const renderMute = () => { $("#muteBtn").textContent = FX.muted ? "🔇" : "🔊"; };
-$("#muteBtn").addEventListener("click", e => { e.stopPropagation(); FX.muted = !FX.muted; save.muted = FX.muted; persist(); renderMute(); FX.tap(); });
+$("#muteBtn").addEventListener("click", e => { e.stopPropagation(); FX.muted = !FX.muted; save.muted = FX.muted; persist(); renderMute(); FX.tap(); FX.music(FX.wantTrack || "calm"); });
 $("#muteBtn").addEventListener("pointerdown", e => e.stopPropagation());
 renderMute();
 
@@ -107,6 +108,7 @@ if (ART) { for (const id of Object.keys(CATS)) for (const k of Object.keys(ART[i
 
 /* ================= 首頁 ================= */
 function renderHome() {
+  FX.music("calm");
   const cats = $("#cats"); cats.innerHTML = "";
   for (const [id, c] of Object.entries(CATS)) {
     const b = document.createElement("button");
@@ -238,6 +240,7 @@ function startGame() {
   $("#doneBtn").disabled = true; $("#finish").hidden = true; $("#hint").style.opacity = 1;
   updateMeter();
   FX.start(m);
+  FX.music(G.catId === "white" || m.id === "bubble" ? "busy" : "calm");
   cancelAnimationFrame(raf); last = performance.now(); raf = requestAnimationFrame(loop);
 }
 $("#quitBtn").addEventListener("click", () => { FX.tap(); endPlay(); show("home"); renderHome(); });
@@ -485,7 +488,12 @@ function track(prev) {
   if (d > 0.5) { G.scratchMs += Math.min(dt, 60); G.lastMove = now; }
   movePaw();
 }
-function setPaw(out) { const p = $("#paw"); p.innerHTML = pawSVG(G.catId, out); p.classList.toggle("down", out); }
+function setPaw(out) {
+  // 有 AI 畫的貓掌就用（總編、架構師），沒有就用程式畫的
+  const p = $("#paw"), src = ART && ART[G.catId] && ART[G.catId][out ? "pawOut" : "pawIn"];
+  p.innerHTML = src ? `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:contain;object-position:top">` : pawSVG(G.catId, out);
+  p.classList.toggle("down", out);
+}
 function movePaw() { const p = $("#paw"); p.style.left = G.paw.x + "px"; p.style.top = G.paw.y + "px"; }
 
 cv.addEventListener("pointerdown", e => {

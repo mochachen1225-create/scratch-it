@@ -2,7 +2,19 @@
 const FX = {
   ctx: null, noise: null, scratchGain: null, filter: null, muted: false, mat: null,
   init(muted) { this.muted = muted; },
+  // 背景音樂：音量壓低、循環；靜音時一起停
+  bgm: {}, track: null,
+  music(name) {
+    this.wantTrack = name;
+    if (this.muted || !this.unlocked || typeof MUSIC === "undefined") { for (const a of Object.values(this.bgm)) a.pause(); return; }
+    for (const [k, a] of Object.entries(this.bgm)) if (k !== name) a.pause();
+    let a = this.bgm[name];
+    if (!a) { a = this.bgm[name] = new Audio(MUSIC[name]); a.loop = true; a.volume = 0.22; }
+    if (a.paused) a.play().catch(() => {});
+    this.track = name;
+  },
   unlock() {
+    if (!this.unlocked) { this.unlocked = true; if (this.wantTrack) setTimeout(() => this.music(this.wantTrack), 0); }
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
       this.ctx = new AC();
