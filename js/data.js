@@ -25,13 +25,13 @@ const CATS = {
 // 材質：手感、聲音、紙屑都不同。ready = 這一版做好了沒
 const MATERIALS = [
   { id: "cardboard", name: "瓦楞紙貓抓板", icon: "📦", ready: true, unlock: null,
-    base: "#d9b483", base2: "#c79d66", groove: "#8a6236", fuzz: "#f6e2bd", hole: "#2e2116",
-    under: "#a8773f", stamp: "#9b5a3c", mode: "hex", debris: "strip", sound: { type: "bandpass", freq: 2600, q: 1.1, crackle: 0.5, gain: 0.5 } },
+    base: "#d9b483", base2: "#c79d66", groove: "#8a6236", fuzz: "#fbeed2", hole: "#4a2f17",
+    under: "#a8773f", stamp: "#9b5a3c", mode: "strip", debris: "strip", sound: { type: "bandpass", freq: 2600, q: 1.1, crackle: 0.5, gain: 0.5 } },
   { id: "sofa", name: "沙發", icon: "🛋️", ready: true, unlock: { type: "paintings", n: 3 },
     base: "#5f9e96", base2: "#4f8a83", groove: "#3f6f69", fuzz: "#e9f3f1", hole: "#fff7ea",
     under: "#fff7ea", stamp: "#ffc7d4", mode: "hex", debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
   // 泡泡紙：一格格小泡泡，抓過去連續啵啵啵
-  { id: "bubble", name: "泡泡紙", icon: "🫧", ready: true, unlock: { type: "totalHoles", n: 3000 },
+  { id: "bubble", name: "泡泡紙", icon: "🫧", ready: true, unlock: { type: "totalHoles", n: 5000 },
     base: "#d9ecf7", base2: "#bcd9ec", groove: "#a9cbe0", fuzz: "#ffffff", hole: "#eef7fc", under: "#eef7fc", stamp: "#f39bb0",
     mode: "bubble", debris: "plastic", sound: { type: "highpass", freq: 1800, q: 0.7, crackle: 0, gain: 0.3 } },
   { id: "castle", name: "紙箱城堡", icon: "🏰", ready: false, unlock: { type: "allcats" } },
@@ -47,7 +47,7 @@ const UNLOCK_TEXT = {
   allcats: "三隻貓都各抓過一次",
   time: "累積抓滿 {0} 分鐘",
   holes: "一張畫打出 {0} 個洞",
-  totalHoles: "累積打 {0} 個洞",
+  totalHoles: "累積抓 {0} 下",
   frenzy: "？？？",
   paintingsOrDecember: "12 月限定，或抓完 {0} 張畫"
 };
@@ -70,6 +70,13 @@ const ART = window.NO_ART ? null : {
   white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp", pawOut: "art/white_paw_out.webp", pawIn: "art/white_paw_in.webp" },
   flutes: "art/tex_flutes.jpg"
 };
+// 材質插畫接口（之後 AI 圖到了填路徑；null＝用程式畫的）
+// base：紙面無縫貼圖（拼貼鋪滿）；hole：一個洞的貼圖（沙發露棉花、布邊毛邊）；under：碎掉後露出的底層無縫貼圖
+const MAT_ART = window.NO_ART ? {} : {
+  sofa: { base: null, hole: null, under: null },
+  bubble: { base: null, hole: null, under: null }
+};
+
 // 刮刮卡收集：每張紙下面藏一張驚喜插畫（AI 圖），抓開一定比例就「找到了」
 // kind：caught 被抓包、treasure 寶物（可以送給貓）、prank 整人卡；rarity：1 普通、2 稀有、3 超稀有
 // sticker：去背貼紙圖（放在暖色底上），其他是滿版場景

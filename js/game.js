@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.4.1";
+const VERSION = "0.5.0";
 const CHANGES = [
+  "瓦楞紙改成沿著紙條扒開的長條抓痕（感謝玩家回報）",
   "同一張卡找到 3 次會變閃亮版；整人卡會噗一聲",
   "刮刮卡收集：每張紙下面藏一張驚喜插畫，抓開就收進收集冊（12 張＋全收集獎勵）",
   "找到的寶物可以送給貓咪",
@@ -106,11 +107,17 @@ function catImg(id, pose, cls = "") {
   if (!src) return fallback;
   return `<img class="${cls}" src="${src}" alt="" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(fallback)}')">`;
 }
-const imgCache = {};
+const imgCache = {}, imgReady = {};
 function loadImg(src) {
   if (!src) return Promise.resolve(null);
-  if (!imgCache[src]) imgCache[src] = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  if (!imgCache[src]) imgCache[src] = new Promise(res => { const im = new Image(); im.onload = () => { imgReady[src] = im; res(im); }; im.onerror = () => res(null); im.src = src; });
   return imgCache[src];
+}
+// 材質貼圖：已經載好就用，沒有就回傳 null（用程式畫的）
+const matArt = (m, k) => { const src = MAT_ART[m.id] && MAT_ART[m.id][k]; return src ? imgReady[src] || null : null; };
+for (const a of Object.values(MAT_ART)) for (const src of Object.values(a)) loadImg(src);
+function fillTile(c, im, x, y, w, h, size = 200) {
+  const k = size / im.width; c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.scale(k, k); c.fillStyle = c.createPattern(im, "repeat"); c.fillRect(x / k, y / k, w / k, h / k); c.restore();
 }
 if (ART) { for (const id of Object.keys(CATS)) for (const k of Object.keys(ART[id])) loadImg(ART[id][k]); loadImg(ART.flutes); }
 
@@ -186,7 +193,12 @@ function setupCanvas() {
 function paintBase(m) {
   const c = bctx;
   c.fillStyle = m.base; c.fillRect(0, 0, Wd, Ht);
-  if (m.id === "cardboard" && save.tex === "ai" && texImg) {
+  const tile = matArt(m, "base");
+  if (tile) {
+    // 有材質插畫就拼貼鋪滿（泡泡紙的泡泡位置還是照程式排）
+    fillTile(c, tile, 0, 0, Wd, Ht);
+    c.strokeStyle = "rgba(0,0,0,.25)"; c.lineWidth = 6; c.strokeRect(3, 3, Wd - 6, Ht - 6);
+  } else if (m.id === "cardboard" && save.tex === "ai" && texImg) {
     // AI 生成的瓦楞波浪紋，拼貼鋪滿
     const pat = c.createPattern(texImg, "repeat"); const k = 200 / texImg.width;
     c.save(); c.scale(k, k); c.fillStyle = pat; c.fillRect(0, 0, Wd / k, Ht / k); c.restore();
@@ -249,6 +261,7 @@ function startGame() {
   const ps = Math.min(Wd - 28, Ht * .5);
   G.pic = { x: (Wd - ps) / 2, y: Ht * .47 - ps / 2, s: ps };
   G.picTot = 0; G.picHit = 0; G.found = false;
+  setGrid(m);
   if (m.mode === "bubble") setupBubbles(); else setupHoles();
   paintUnder(m);
   texImg = null;
@@ -271,11 +284,18 @@ function endPlay() { cancelAnimationFrame(raf); FX.stop(); cv.style.transform = 
 /* ================= 抓：爪痕＋密密麻麻的小洞 ================= */
 // 「幸福的密集恐懼感」：爪尖沿路打出小圓洞，洞吸附在蜂巢格上，越抓越整齊密集；
 // 一小塊（6×6 格）打到 85% 就「啵」一聲整片碎掉，旁邊快滿的區塊會跟著連鎖碎掉
-const HEX = 9, ROWH = HEX * 0.866, PATCH = 6;
-const hexPos = (i, j) => [i * HEX + (j % 2 ? HEX / 2 : 0), j * ROWH];
-const patchOf = (i, j) => Math.floor(j / PATCH) * G.hx.pc + Math.floor(i / PATCH);
+// 格子：一般是蜂巢小圓洞；瓦楞紙改成沿著紙條排的「長條抓痕」格（一列對齊一條紙，橫向很密）
+let HEX = 9, ROWH = 9 * 0.866, OFF = true, Y0 = 0;
+const PATCH = 6;
+let PX = 6;   // 一個區塊橫向幾格（瓦楞紙 8 格：直著抓不會一下就整欄碎掉）
+function setGrid(m) {
+  if (m.mode === "strip") { HEX = 6; ROWH = 7; OFF = false; Y0 = 3.5; PX = 8; }
+  else { HEX = 9; ROWH = 9 * 0.866; OFF = true; Y0 = 0; PX = 6; }
+}
+const hexPos = (i, j) => [i * HEX + (OFF && j % 2 ? HEX / 2 : 0), Y0 + j * ROWH];
+const patchOf = (i, j) => Math.floor(j / PATCH) * G.hx.pc + Math.floor(i / PX);
 function setupHoles() {
-  const cols = Math.ceil(Wd / HEX) + 1, rows = Math.ceil(Ht / ROWH) + 1, pc = Math.ceil(cols / PATCH), pr = Math.ceil(rows / PATCH);
+  const cols = Math.ceil(Wd / HEX) + 1, rows = Math.ceil(Ht / ROWH) + 1, pc = Math.ceil(cols / PX), pr = Math.ceil(rows / PATCH);
   const h = G.hx = { cols, rows, pc, punched: new Uint8Array(cols * rows), pTotal: new Uint16Array(pc * pr), pHit: new Uint16Array(pc * pr), pDone: new Uint8Array(pc * pr), total: 0 };
   for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
     const [x, y] = hexPos(i, j);
@@ -284,7 +304,7 @@ function setupHoles() {
   // 哪些區塊在驚喜插畫上：碎掉的比例決定「找到了沒」
   h.inPic = new Uint8Array(pc * pr); const P = G.pic;
   for (let b = 0; b < pr; b++) for (let a = 0; a < pc; a++) {
-    const x = (a * PATCH + PATCH / 2) * HEX, y = (b * PATCH + PATCH / 2) * ROWH;
+    const x = (a * PX + PX / 2) * HEX, y = Y0 + (b * PATCH + PATCH / 2) * ROWH;
     if (h.pTotal[b * pc + a] && x > P.x && x < P.x + P.s && y > P.y && y < P.y + P.s) { h.inPic[b * pc + a] = 1; G.picTot++; }
   }
 }
@@ -300,9 +320,21 @@ function pickCard() {
 function paintUnder(m) {
   G.under = makeLayer(); const c = G.under.getContext("2d"); c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.fillStyle = m.under; c.fillRect(0, 0, Wd, Ht);
-  // 底層也鋪滿整齊的小點點（密集感）
-  c.fillStyle = "rgba(60,40,20,.22)";
-  for (let j = 0; j * ROWH < Ht; j++) for (let i = 0; i * HEX < Wd; i++) { const [x, y] = hexPos(i, j); c.beginPath(); c.arc(x, y, 1.4, 0, Math.PI * 2); c.fill(); }
+  const ut = matArt(m, "under");
+  if (ut) fillTile(c, ut, 0, 0, Wd, Ht);
+  else if (m.mode === "strip") {
+    // 瓦楞紙扒開後露出的深色波浪芯，一條條排好
+    for (let y = 0; y < Ht; y += 7) {
+      c.fillStyle = "rgba(60,35,15,.35)"; c.fillRect(0, y + 5.8, Wd, 1.2);
+      c.strokeStyle = "rgba(240,205,150,.45)"; c.lineWidth = 1.2; c.beginPath();
+      for (let x = 0; x <= Wd; x += 1.5) { const yy = y + 3.5 + Math.sin(x * .9) * 2; x ? c.lineTo(x, yy) : c.moveTo(x, yy); }
+      c.stroke();
+    }
+  } else {
+    // 底層也鋪滿整齊的小點點（密集感）
+    c.fillStyle = "rgba(60,40,20,.22)";
+    for (let j = 0; j * ROWH < Ht; j++) for (let i = 0; i * HEX < Wd; i++) { const [x, y] = hexPos(i, j); c.beginPath(); c.arc(x, y, 1.4, 0, Math.PI * 2); c.fill(); }
+  }
   G.card = ART ? pickCard() : null;
   if (!G.card) { drawMotif(c, m); return; }
   const P = G.pic, cd = G.card, g = G;
@@ -400,17 +432,40 @@ function setupBubbles() {
 }
 function track2(x, y) { G.minX = Math.min(G.minX, x); G.maxX = Math.max(G.maxX, x); G.minY = Math.min(G.minY, y); G.maxY = Math.max(G.maxY, y); }
 function punchAt(x, y) {
-  const h = G.hx, j = Math.round(y / ROWH), i = Math.round((x - (j % 2 ? HEX / 2 : 0)) / HEX);
-  if (i < 0 || j < 0 || i >= h.cols || j >= h.rows) return;
-  const k = j * h.cols + i; if (h.punched[k]) return;
-  const p = patchOf(i, j); if (h.pDone[p]) return;
+  const j = Math.round((y - Y0) / ROWH), i = Math.round((x - (OFF && j % 2 ? HEX / 2 : 0)) / HEX);
+  if (!punchCell(i, j)) return;
+  // 瓦楞紙：沿著紙條方向一起被扒開，抓痕拉長
+  if (G.m.mode === "strip") { if (Math.random() < .45) punchCell(i + 1, j); if (Math.random() < .45) punchCell(i - 1, j); }
+}
+function punchCell(i, j) {
+  const h = G.hx;
+  if (i < 0 || j < 0 || i >= h.cols || j >= h.rows) return false;
+  const k = j * h.cols + i; if (h.punched[k]) return false;
+  const p = patchOf(i, j); if (h.pDone[p]) return false;
   h.punched[k] = 1; G.holes++; h.pHit[p]++;
   const [cx, cy] = hexPos(i, j), c = dctx, m = G.m;
-  c.fillStyle = m.hole; c.beginPath(); c.arc(cx, cy, 2.9, 0, Math.PI * 2); c.fill();
-  c.strokeStyle = m.fuzz; c.lineWidth = .9; c.stroke();
+  if (m.mode === "strip") {
+    // 長條抓痕：紙條表面被刮開，露出深色的縫，上下是翹起來的淺色毛邊；相鄰的格子連成一長條
+    c.fillStyle = m.hole; c.fillRect(cx - HEX / 2 - .6, cy - 1.5, HEX + 1.2, 3);
+    c.fillStyle = m.fuzz;
+    for (let x = cx - HEX / 2; x < cx + HEX / 2; x += 1.5) { c.fillRect(x, cy - 2.6 - rand(0, 1.2), 1.2, rand(.8, 1.6)); c.fillRect(x, cy + 1.4, 1.2, rand(.5, 1.3)); }
+    if (Math.random() < .12) {
+      // 翹起來的小紙條
+      c.strokeStyle = m.fuzz; c.lineWidth = 1.4; c.lineCap = "round"; c.beginPath();
+      c.moveTo(cx, cy - 2); c.quadraticCurveTo(cx + rand(2, 5), cy - rand(4, 7), cx + rand(5, 9), cy - rand(2, 6)); c.stroke();
+    }
+  } else if (matArt(m, "hole")) {
+    // 洞的插畫（例如沙發露出棉花、布邊毛邊），每個洞轉個隨機角度
+    const im = matArt(m, "hole"), sz = HEX * 1.15;
+    c.save(); c.translate(cx, cy); c.rotate(rand(0, 6.3)); c.drawImage(im, -sz / 2, -sz / 2, sz, sz); c.restore();
+  } else {
+    c.fillStyle = m.hole; c.beginPath(); c.arc(cx, cy, 2.9, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = m.fuzz; c.lineWidth = .9; c.stroke();
+  }
   track2(cx, cy);
   if (Math.random() < .1) spawnDebris(cx, cy, rand(-1, 1), -1);
   if (h.pHit[p] >= h.pTotal[p] * .85) burstPatch(p, 0);
+  return true;
 }
 function punchArea(x, y, r) {
   // 小弟的大爪：一爪打穿一整圈（泡泡紙就是一次壓破一圈泡泡）
@@ -433,7 +488,7 @@ function burstPatch(p, chain) {
   let full = true;
   for (let i = 0; i < pc; i++) { const q = pj * pc + i; if (h.pTotal[q] && !h.pDone[q]) { full = false; break; } }
   const cells = [];
-  for (let j = pj * PATCH; j < Math.min(h.rows, (pj + 1) * PATCH); j++) for (let i = pi * PATCH; i < Math.min(h.cols, (pi + 1) * PATCH); i++) {
+  for (let j = pj * PATCH; j < Math.min(h.rows, (pj + 1) * PATCH); j++) for (let i = pi * PX; i < Math.min(h.cols, (pi + 1) * PX); i++) {
     const k = j * h.cols + i; if (h.punched[k] === 2) continue;
     if (!h.punched[k]) { h.punched[k] = 1; G.holes++; }
     cells.push(hexPos(i, j));
@@ -441,8 +496,14 @@ function burstPatch(p, chain) {
   if (!cells.length) return;
   // 整片碎掉，露出底下藏的圖案
   c.save(); c.beginPath();
-  for (const [x, y] of cells) { c.moveTo(x + HEX * .7, y); c.arc(x, y, HEX * .7, 0, Math.PI * 2); }
+  if (OFF) for (const [x, y] of cells) { c.moveTo(x + HEX * .7, y); c.arc(x, y, HEX * .7, 0, Math.PI * 2); }
+  else for (const [x, y] of cells) c.rect(x - HEX / 2 - .5, y - ROWH / 2, HEX + 1, ROWH);
   c.clip(); c.drawImage(G.under, 0, 0, Wd, Ht); c.restore();
+  if (!OFF) {
+    // 瓦楞紙：每條紙被撕開的上下邊都留一圈淺色毛邊，看起來是一條條扒掉的
+    c.fillStyle = m.fuzz;
+    for (const [x, y] of cells) for (let xx = x - HEX / 2; xx < x + HEX / 2; xx += 1.5) { c.fillRect(xx, y - ROWH / 2, 1.2, rand(.6, 1.8)); if (Math.random() < .5) c.fillRect(xx, y + ROWH / 2 - rand(.5, 1.2), 1.2, 1); }
+  }
   const cx = cells.reduce((a, q) => a + q[0], 0) / cells.length, cy = cells.reduce((a, q) => a + q[1], 0) / cells.length;
   track2(cx, cy);
   for (let i = 0; i < 34; i++) spawnDebris(cx + rand(-24, 24), cy + rand(-24, 24), rand(-1, 1), rand(-1, .3));
@@ -463,7 +524,7 @@ function burstPatch(p, chain) {
       G.rowDone[pj] = 1;
       const rest = []; for (let i = 0; i < pc; i++) { const q = pj * pc + i; if (h.pTotal[q] && !h.pDone[q]) rest.push(q); }
       rest.forEach((q, n) => setTimeout(() => G && !G.done && burstPatch(q, 0), 160 + n * 70));
-      setTimeout(() => G && !G.done && rowClear((pj + .5) * PATCH * ROWH, PATCH * ROWH), 200 + rest.length * 70);
+      setTimeout(() => G && !G.done && rowClear(Y0 + (pj + .5) * PATCH * ROWH - ROWH / 2, PATCH * ROWH), 200 + rest.length * 70);
     }
   }
   // 連鎖：旁邊打到六成以上的區塊，接著一塊一塊碎
@@ -853,7 +914,7 @@ function finish() {
     // 解鎖新材質或破紀錄：三隻貓出來跳舞
     if (complete) dance(T("全收集！")).then(() => showCard(REWARD, true));
     else if (fresh.length) dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
-    else if (record) dance(T("新紀錄！{0} 個洞", info.holes.toLocaleString()));
+    else if (record) dance(T("新紀錄！一張抓了 {0} 下", info.holes.toLocaleString()));
     else if (info.card && !info.found) toast(T("差一點就找到了！下面藏著一張{0}卡 {1}", T(RARITY[CARDS.find(cd => cd.id === info.card).rarity].name), RARITY[CARDS.find(cd => cd.id === info.card).rarity].stars), 3200);
     else if (firstFind && info.card && CARDS.find(cd => cd.id === info.card).kind === "treasure") toast(T("🎁 寶物放進寶物袋了，可以到收集冊送給貓咪"), 3200);
   }, 3300);
@@ -1010,7 +1071,7 @@ async function buildCard(info) {
   x.font = F(60, true); x.fillText(title, 270, 1050, 760);
   x.font = F(36); x.fillStyle = "#6a5a52";
   x.fillText(T("{0}的抓痕畫・{1}・{2} 秒", W(cat.name), W(cat.style), info.sec), 272, 1108, 760);
-  const holesTxt = info.mat === "bubble" ? T("啵了 {0} 顆泡泡", info.holes.toLocaleString()) : T("這張打了 {0} 個洞", info.holes.toLocaleString());
+  const holesTxt = info.mat === "bubble" ? T("啵了 {0} 顆泡泡", info.holes.toLocaleString()) : info.mat === "cardboard" ? T("這張抓了 {0} 下", info.holes.toLocaleString()) : T("這張打了 {0} 個洞", info.holes.toLocaleString());
   x.font = F(32); x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${holesTxt}`, 272, 1156, 760);
   if (info.card) {
     const cd = CARDS.find(q => q.id === info.card);
