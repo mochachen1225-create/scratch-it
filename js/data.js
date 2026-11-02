@@ -87,8 +87,9 @@ const ART = window.NO_ART ? null : {
   orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", tail: "art/orange_tail.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp" },
   grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp", pawOut: "art/grey_paw_out.webp", pawIn: "art/grey_paw_in.webp" },
   white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp", pawOut: "art/white_paw_out.webp", pawIn: "art/white_paw_in.webp" },
-  husky: { sit: "art/husky_sit.webp" },
-  peek: { orange: "art/orange_peek.webp" },
+  // 哈士奇收爪的掌還沒到，先兩個狀態都用伸爪那張
+  husky: { sit: "art/husky_sit.webp", lie: "art/husky_lie.webp", box: "art/husky_box.webp", tail: "art/husky_box.webp", pawOut: "art/husky_paw_out.webp", pawIn: "art/husky_paw_out.webp" },
+  peek: { orange: "art/orange_peek.webp", white: "art/white_peek.webp" },
   // 瓦楞紙花紋 B：FLUX 生成的無縫貼圖（花紋 A 是程式畫的），兩種輪流用
   flux: "art/tex_flux.jpg"
 };

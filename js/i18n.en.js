@@ -16,6 +16,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "小弟也會從畫面下面探頭來蹭你；哈士奇有了躺姿、拆爛紙箱和自己的掌": "Kit now peeks up from the bottom to rub against you too; the husky gets lying, wrecked-box and paw art",
   "跳舞換上新的 Disco 舞曲；哈士奇變成拆家搞笑擔當": "Dances now use a new disco song; the husky is now the home-wrecking clown",
   "拆家派": "Home Wrecker",
   "抓得比貓還兇，拆完自己嚇一跳": "Scratches harder than any cat, then scares itself with the mess",

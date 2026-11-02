@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.6.1";
+const VERSION = "0.6.2";
 const CHANGES = [
+  "小弟也會從畫面下面探頭來蹭你；哈士奇有了躺姿、拆爛紙箱和自己的掌",
   "跳舞換上新的 Disco 舞曲；哈士奇變成拆家搞笑擔當",
   "好感度：每隻貓最多 5 顆❤️，只會越來越愛；滿 5 顆送你回禮",
   "12 個小禮物（收集冊第二頁），可以選一隻貓送，送到最愛的有專屬反應",
@@ -281,7 +282,7 @@ function roundRect(c, x, y, w, h, r) {
 /* ================= 開始一局 ================= */
 function startGame() {
   const cat = CATS[save.cat], m = matById(save.mat);
-  show("play");
+  show("play"); $("#peek").hidden = true;
   setupCanvas();
   G = {
     catId: save.cat, cat, m, holes: 0, bursts: 0, rainUntil: 0, rainBand: 46,
@@ -318,7 +319,7 @@ function startGame() {
 }
 $("#quitBtn").addEventListener("click", () => { FX.tap(); endPlay(); show("home"); renderHome(); });
 $("#doneBtn").addEventListener("click", () => { if (G && !G.done) { G.pressedDone = true; finish(); } });
-function endPlay() { cancelAnimationFrame(raf); FX.stop(); cv.style.transform = ""; document.body.classList.remove("zoomies"); $("#paw2").hidden = true; G = null; }
+function endPlay() { cancelAnimationFrame(raf); FX.stop(); cv.style.transform = ""; $("#peek").hidden = true; document.body.classList.remove("zoomies"); $("#paw2").hidden = true; G = null; }
 
 /* ================= 抓：爪痕＋密密麻麻的小洞 ================= */
 // 「幸福的密集恐懼感」：爪尖沿路打出小圓洞，洞吸附在蜂巢格上，越抓越整齊密集；
@@ -739,6 +740,8 @@ function bubble(text, x, y) {
   const b = document.createElement("div"); b.className = "bubble"; b.textContent = text;
   b.style.left = clamp(x - 40, 8, Wd - 120) + "px"; b.style.top = clamp(y, 60, Ht - 80) + "px";
   document.body.appendChild(b); setTimeout(() => b.remove(), 950);
+  // 長句子不要超出右邊
+  const over = b.offsetLeft + b.offsetWidth - (Wd - 8); if (over > 0) b.style.left = Math.max(8, b.offsetLeft - over) + "px";
   return b;
 }
 
@@ -1119,7 +1122,8 @@ async function diveIn() {
     c.strokeStyle = k.stripe; c.lineWidth = 15; c.beginPath(); c.moveTo(Wd / 2 + 10, top - 20); c.quadraticCurveTo(Wd / 2 + 34, top - 40, Wd / 2 + 26, top - 8); c.stroke();
     y0 = top + 70;
   } else {
-    const im = (await loadImg(ART && ART[id] && ART[id].sit)) || await svgImage(catSVG(id, "sit"));
+    // 哈士奇：坐在自己拆爛的紙箱裡
+    const im = (await loadImg(ART && ART[id] && (id === "husky" ? ART[id].box : ART[id].sit))) || await svgImage(catSVG(id, "sit"));
     if (!G) return;
     const h = im ? w * im.height / im.width : w;
     if (im) c.drawImage(im, Wd / 2 - w / 2, top, w, h);
