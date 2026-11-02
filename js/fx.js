@@ -16,7 +16,7 @@ const FX = {
   playSafe(a, key) { const pr = a.play(); if (pr) pr.then(() => { if (this.muted || this.track !== key) a.pause(); }).catch(() => {}); },
   music(name) {
     this.wantTrack = name;
-    if (this.muted || !this.unlocked || typeof MUSIC === "undefined") { for (const a of Object.values(this.bgm)) a.pause(); if (this.danceA) this.danceA.pause(); this.dancing = false; return; }
+    if (this.muted || !this.unlocked || typeof MUSIC === "undefined") { for (const a of Object.values(this.bgm)) a.pause(); for (const a of Object.values(this.danceEls || {})) a.pause(); this.dancing = false; return; }
     if (this.dancing) return;            // 跳舞時不放背景音樂，跳完會接回來
     this.track = name;
     for (const [k, a] of Object.entries(this.bgm)) if (k !== name) a.pause();
@@ -136,13 +136,16 @@ const FX = {
   // 暴衝完喘氣：呼…呼…
   pant() { for (let i = 0; i < 4; i++) setTimeout(() => this.burst(0.22, 1400, 700, 0.22), i * 320); },
   // 跳舞音樂：〈Zoomies〉68 秒後最熱鬧的一段，放幾秒就淡出
-  danceMusic(sec) {
+  danceMusic(sec, key = "disco") {
     if (this.muted || !this.unlocked || typeof MUSIC === "undefined") return;
+    const tr = (typeof DANCE_MUSIC !== "undefined" && DANCE_MUSIC[key]) || { src: MUSIC.busy, start: 68 };
     this.dancing = true; this.track = "dance";
     for (const a of Object.values(this.bgm)) a.pause();
-    const a = this.danceA || (this.danceA = new Audio(MUSIC.busy));
+    if (this.danceA && this.danceA._key !== key) this.danceA.pause();
+    this.danceEls = this.danceEls || {};
+    const a = this.danceA = this.danceEls[key] || (this.danceEls[key] = Object.assign(new Audio(tr.src), { _key: key }));
     clearTimeout(this.danceOff); this.setVol(a, this.DANCE_VOL);
-    const go = () => { try { a.currentTime = 68; } catch {} this.playSafe(a, "dance"); };
+    const go = () => { try { a.currentTime = tr.start; } catch {} this.playSafe(a, "dance"); };
     if (a.readyState >= 1) go(); else a.addEventListener("loadedmetadata", go, { once: true });
     clearTimeout(this.danceT); this.danceT = setTimeout(() => this.danceStop(), sec * 1000);
   },

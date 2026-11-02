@@ -21,9 +21,9 @@ const CATS = {
     spacing: 8, speed: 1.1, like: "toss",     // 最愛：可以打飛的
     finish: "box"                     // 抓完：鑽進紙箱只露尾巴
   },
-  // 彩蛋：哈士奇（中二戲劇型）。三隻貓都滿 5 顆❤️，或流派收集 18／18 才會出現
+  // 彩蛋：哈士奇（拆家搞笑擔當，帶一點中二）。三隻貓都滿 5 顆❤️，或流派收集 18／18 才會出現
   husky: {
-    name: "哈士奇", style: "戲劇派", desc: "抓破時嗷嗚～，還嫌自己的畫不夠破",
+    name: "哈士奇", style: "拆家派", desc: "抓得比貓還兇，拆完自己嚇一跳",
     fur: "#f4f4f2", stripe: "#3d3d44", belly: "#ffffff", ear: "#3d3d44", accessory: "none",
     spacing: 13, speed: 1.2, finish: "sit", egg: true
   }
@@ -152,5 +152,14 @@ const FAV_LINE = { orange: "總編叼走{0}，收進紙箱排得整整齊齊", g
 
 // 背景音樂（摩卡與貓貓小隊 用 Gemini 做的 AI 音樂）：一般用慵懶的 Sunbeams，小弟和泡泡紙用輕快的 Zoomies
 const MUSIC = { calm: "audio/sunbeams.mp3", busy: "audio/zoomies.mp3", zoomies: "audio/gallop.mp3" };
+// 舞曲（摩卡與貓貓小隊用 Gemini 做）：start＝最熱鬧那一段從第幾秒開始。現在慶祝都跳 Disco，其他留給之後的「舞步解鎖」
+const DANCE_MUSIC = {
+  disco: { src: "audio/dance_disco.mp3", start: 23 },   // Polka Dot Sneakers
+  kpop: { src: "audio/dance_kpop.mp3", start: 47 },     // Pink Pause（女團舞）
+  break: { src: "audio/dance_break.mp3", start: 47 },   // Nine Lives at Noon（復古霹靂舞）
+  court: { src: "audio/dance_court.mp3", start: 5 },    // A Courtly Pounce（宮廷舞）
+  bon: { src: "audio/dance_bon.mp3", start: 36 },       // Festival of Whiskers（盆舞）
+  ballet: { src: "audio/dance_ballet.mp3", start: 23 }  // Tiptoeing Paws（芭蕾）
+};
 
 const GAME_URL_DEFAULT = "https://mochachen1225-create.github.io/scratch-it/";

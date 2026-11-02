@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.6.0";
+const VERSION = "0.6.1";
 const CHANGES = [
+  "跳舞換上新的 Disco 舞曲；哈士奇變成拆家搞笑擔當",
   "好感度：每隻貓最多 5 顆❤️，只會越來越愛；滿 5 顆送你回禮",
   "12 個小禮物（收集冊第二頁），可以選一隻貓送，送到最愛的有專屬反應",
   "愛心多了，貓會在首頁眨眼、抓畫時跑來蹭你、跳招牌舞步、睡在首頁",
@@ -607,7 +608,12 @@ function burstPatch(p, chain) {
   track2(cx, cy);
   for (let i = 0; i < 34; i++) spawnDebris(cx + rand(-24, 24), cy + rand(-24, 24), rand(-1, 1), rand(-1, .3));
   FX.pop(chain); FX.vibrate(12 + chain * 4);
-  if (G.catId === "husky" && Math.random() < .2 && performance.now() - (G.lastHowl || 0) > 4000) { G.lastHowl = performance.now(); FX.howl(); bubble(T("嗷嗚～"), cx - 20, cy - 70); }
+  // 哈士奇拆家：碎一塊就順便把旁邊也扯爛，偶爾嗷嗚一聲（一點點中二）
+  if (G.catId === "husky" && chain === 0 && Math.random() < .35) setTimeout(() => { if (!G || G.done) return; const q = neighbors(p).find(x => !h.pDone[x] && h.pTotal[x]); if (q !== undefined) burstPatch(q, 1); }, 90);
+  if (G.catId === "husky" && Math.random() < .18 && performance.now() - (G.lastHowl || 0) > 4500) {
+    G.lastHowl = performance.now(); const line = [T("嗷嗚～拆！"), T("這塊也拆掉！"), T("……剛剛是我嗎？")][Math.floor(Math.random() * 3)];
+    if (line !== T("……剛剛是我嗎？")) FX.howl(); bubble(line, cx - 30, cy - 70);
+  }
   G.bestChain = Math.max(G.bestChain || 0, chain + 1);
   if (chain >= 1) {
     // 連鎖只留一個泡泡，數字往上跳
@@ -1102,7 +1108,7 @@ const moundY = (x, y0) => y0 + 120 * Math.pow(Math.abs(x - Wd / 2) / (Wd / 2), 1
 async function diveIn() {
   if (!G) return;
   const id = G.catId, w = Math.min(Wd * .5, 220), top = Ht * .56, c = dctx;
-  FX.plop(); bubble(id === "husky" ? T("哼，還不夠破。") : T("噗通！"), Wd / 2 - 60, top - 70);
+  FX.plop(); bubble(id === "husky" ? T("（叼著碎片）……不是我拆的。") : T("噗通！"), Wd / 2 - 90, top - 70);
   let y0;
   if (id === "white") {
     const k = CATS.white;
@@ -1141,7 +1147,7 @@ function popup(icon, text, btn) {
 $("#unlockOk").addEventListener("click", () => { $("#unlockPop").hidden = true; FX.tap(); const r = popup.res; popup.res = null; if (r) r(); });
 // 跳舞慶祝：三隻貓的坐姿插畫用程式動起來（彈跳、擺動、壓扁），配〈Zoomies〉最熱鬧的一段
 // 點跳舞的貓：喵一聲、跳更高；點旁邊結束
-function dance(text, { pose = "sit", bg = null, img = null, music = true, star = null } = {}) {
+function dance(text, { pose = "sit", bg = null, img = null, music = true, star = null, song = "disco" } = {}) {
   const d = $("#dance");
   // 收到禮物的那隻站中間；❤️3 的貓會跳招牌舞步
   let ids = chars();
@@ -1151,7 +1157,7 @@ function dance(text, { pose = "sit", bg = null, img = null, music = true, star =
   d.style.backgroundImage = bg ? `linear-gradient(rgba(253,243,227,.35), rgba(253,243,227,.55)), url(${bg})` : "";
   d.querySelector("p").textContent = text;
   d.hidden = false;
-  if (music) { FX.danceMusic(5); FX.unlockChime(); } else FX.sad();
+  if (music) { FX.danceMusic(5, song); FX.unlockChime(); } else FX.sad();
   return new Promise(res => {
     let t;
     const done = () => { if (d.hidden) return; clearTimeout(t); d.hidden = true; FX.danceStop(); res(); };
@@ -1196,7 +1202,7 @@ function checkHusky() {
   const styles = Object.keys(save.styles || {}).length;
   if (!(MAIN_CATS.every(id => hearts(id) >= 5) || styles >= Object.keys(ART_STYLES).length)) return;
   save.husky = true; persist();
-  dance(T("哈士奇來玩了！可以在首頁選牠"), { img: ART && ART.husky.sit, star: "husky" });
+  dance(T("哈士奇來拆家了！可以在首頁選牠"), { img: ART && ART.husky.sit, star: "husky", song: "bon" });
 }
 /* ================= 收集冊＋寶物袋 ================= */
 let bookTab = "pic";
