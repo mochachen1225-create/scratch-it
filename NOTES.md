@@ -77,14 +77,25 @@
 
 ### 好感度提案（摩卡與貓貓小隊：只會越來越愛）
 - 每隻貓各自 0～5 顆❤️，只增不減：不玩不扣、不會餓、沒有倒數；畫面只顯示愛心（首頁選貓卡片下面一排 ❤️🤍），不顯示數字、不排名
-- 怎麼加（內部點數，玩家看不到）：用這隻貓抓完一張 +3（找到驚喜插畫再 +1）；送一個禮物 +6；送到最愛的 +12＋特別反應。門檻 10／30／60／100／150 點＝1～5 顆心（大約 3 張畫第一顆心、送禮比較快）
+- 怎麼加（內部點數，玩家看不到）：用這隻貓抓完一張 +3（找到驚喜插畫再 +1）；送一個禮物 +6；送到最愛的 +12＋特別反應。門檻 3／8／18／45／90 點＝1～5 顆心（摩卡與貓貓小隊決定：前面要超快——抓完第一張或第一次送禮就有第一顆心，前兩三顆都快，後面再慢）
 - 送禮改成「選一隻貓送」：點「送給貓咪」→ 跳出三隻貓頭像選一隻 → 收到的那隻站中間跳最高，另外兩隻在旁邊跟著跳
 - 最愛的禮物（卡片加一個類型 tag）：小弟＝可以打飛的（紙團、寶特瓶蓋、鈴鐺球、橡皮筋球、瓶蓋環）；架構師＝軟的（麻繩、小娃娃、魚魚抱枕、髮圈、逗貓棒）；總編＝小的好叼的（原子筆蓋、吸管、鈕扣、鞋帶）；一包飼料三隻都愛；高級貓窩照舊沒人理（只 +1，字幕「……心意收到了」）
 - 特別反應：送到最愛的，那隻貓的專屬字幕＋專屬動作（小弟把東西打飛再追、架構師抱著蹭臉、總編叼走收進紙箱排好）
 - 每多一顆心解鎖一個小變化（每隻貓各自）：❤️1 首頁那隻貓會眨眼、尾巴擺；❤️2 抓畫時偶爾從畫面邊邊探頭來蹭（呼嚕聲）；❤️3 跳舞多一個這隻貓的招牌動作；❤️4 首頁那隻貓睡在「開始抓」旁邊；❤️5 回禮：那隻貓送你一張專屬卡（收進收集冊另一欄，例如總編的眼鏡布、架構師的耳麥、小弟的黃帽）
 - 三隻貓個性：小弟心漲最快但也最容易「太熱情」（蹭的時候把紙屑撞飛）、架構師慢熱（加得慢、但❤️5 的回禮最用心）、總編穩定（每次加一樣多）
 - 工作量：1.5～2 天（愛心資料＋首頁顯示＋選貓送禮半天、蹭蹭動畫半天、❤️事件與回禮半天、平衡與測試半天）
-- 建議排 12/12 那版，跟「小禮物 12 個」一起做：最愛的禮物大部分是小禮物，圖到了才有意義；回禮卡要 3 張新圖（之後加進生圖清單）
+- 排進下一版（小禮物的圖已經到了），跟「小禮物 12 個」一起做
+- 回禮卡生圖 prompt（Gemini App，跟其他寶物貼紙同一個畫風）：
+  · 總編的眼鏡布：Cute cartoon sticker of a small folded light-blue glasses cleaning cloth with a tiny round pair of glasses resting on it and one orange tabby cat hair, thick dark brown outline, soft pastel colors, white sticker border, plain white background, no text, no logo
+  · 架構師的耳麥：Cute cartoon sticker of a small blue gaming headset with a tiny microphone, a little silver-grey cat paw print on the ear cup, thick dark brown outline, soft pastel colors, white sticker border, plain white background, no text, no logo
+  · 小弟的黃帽：Cute cartoon sticker of a small yellow baseball cap with an orange button on top, slightly chewed brim and a few white cat hairs, thick dark brown outline, soft pastel colors, white sticker border, plain white background, no text, no logo
+
+### 彩蛋 2 號：哈士奇（阿柴之後）
+- 個性：中二戲劇型——抓破時仰頭「嗷嗚～」、對自己的畫一臉嫌棄（結局字幕「哼，還不夠破。」）、偶爾演很大（抓到一半突然倒地裝死，再跳起來繼續）
+- 出現條件跟阿柴錯開：阿柴是「全部解鎖」後出現；哈士奇是「三隻貓都滿 5 顆❤️」或「流派 18／18」其中一個達成（偏收集派玩家）
+- 手感：爪痕又粗又長、方向很戲劇（大弧線）、抓破時有一小段慢動作＋嗷嗚聲
+- 需要的圖（同阿柴）：坐、躺、鑽紙箱只露尾巴、第一人稱的掌（伸爪／收爪），跳舞要拆件圖（頭正面／背面、身體、尾巴、四隻腳）
+- 工作量：跟阿柴共用角色框架後約 1 天
 
 ### 新材質提案
 - 戳紙門：日式紙拉門（木格＋白紙），一戳一個洞、一格一格戳破，木格讓洞排得整齊（密集但療癒）；一格戳滿紙整片垂下來。建議當主模式新材質（取代或加在窗簾旁）
