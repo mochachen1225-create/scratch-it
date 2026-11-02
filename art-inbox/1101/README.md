@@ -28,3 +28,6 @@
 - prank_poop：整人卡。小弟笑著坐在貓砂盆旁，盆裡一坨有笑臉的卡通便便，不噁心。
 - reward_kiss：全收集獎勵。摩卡親總編，架構師、小弟在旁邊抱她，三隻配件都對；臉正常。
 - 還沒有：surprise_fridge_b、treasure_wand_b／treasure_ball_b（非必要）、paws/arch_paw_claws_out（架構師銀灰伸爪）。
+
+## 11/2 架構師的掌（程式改色）
+- paws/arch_paw_claws_out.jpg、arch_paw_claws_in.jpg：用小弟的掌（Gemini AI 圖）改成架構師的銀灰色、去掉棕斑。白底白邊，要裁切＋去背。
