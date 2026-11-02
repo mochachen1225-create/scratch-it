@@ -23,7 +23,7 @@ const CATS = {
 };
 
 // 材質：手感、聲音、紙屑都不同。ready = 這一版做好了沒
-// 解鎖一條路往下開（Katie：完成 A 才解鎖 B）：after＝要先解鎖哪一個，條件都是「用上一個材質完成某件事」；聖誕紙箱、衛生紙捲是支線
+// 解鎖一條路往下開（摩卡與貓貓小隊：完成 A 才解鎖 B）：after＝要先解鎖哪一個，條件都是「用上一個材質完成某件事」；聖誕紙箱、衛生紙捲是支線
 const MATERIALS = [
   { id: "cardboard", name: "瓦楞紙貓抓板", icon: "📦", ready: true, unlock: null,
     base: "#d9b483", base2: "#c79d66", groove: "#8a6236", fuzz: "#fbeed2", hole: "#4a2f17",
@@ -74,7 +74,7 @@ const STYLE_NOTES = {
   am3: "這個時間，只有貓醒著。", nap: "抓著抓著就睡著了。", pawpad: "評審團一致喵過。"
 };
 
-// AI 插畫（Katie 用 Gemini App 生成）。window.NO_ART = true 時全部改用程式畫的版本
+// AI 插畫（摩卡與貓貓小隊 用 Gemini App 生成）。window.NO_ART = true 時全部改用程式畫的版本
 const ART = window.NO_ART ? null : {
   orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", tail: "art/orange_tail.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp" },
   grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp", pawOut: "art/grey_paw_out.webp", pawIn: "art/grey_paw_in.webp" },
@@ -106,7 +106,7 @@ const CARDS = [
   { id: "fridge", kind: "caught", rarity: 3, name: "半夜偷開冰箱", say: "被抓到了！半夜偷開冰箱" },
   { id: "catbed", kind: "treasure", rarity: 3, name: "高級貓窩", say: "找到高級貓窩！" }
 ];
-// 預留的小禮物（Katie 的 Gemini 圖還沒到）：圖到了搬進 CARDS 就會出現；之後也給「叼玩具」「推杯子」共用
+// 預留的小禮物（摩卡與貓貓小隊 的 Gemini 圖還沒到）：圖到了搬進 CARDS 就會出現；之後也給「叼玩具」「推杯子」共用
 const CARDS_PENDING = [
   { id: "twine", kind: "treasure", rarity: 1, sticker: true, name: "麻繩", say: "找到一段麻繩！（可以咬一整天）" },
   { id: "doll", kind: "treasure", rarity: 2, sticker: true, name: "小娃娃", say: "找到小娃娃！（現在是貓的了）" },
@@ -125,7 +125,7 @@ const REWARD = { id: "kiss", name: "全收集親親合照" };
 const RARITY = { 1: { name: "普通", stars: "★", weight: 60, color: "#a9e5c6" }, 2: { name: "稀有", stars: "★★", weight: 30, color: "#aed5ff" }, 3: { name: "超稀有", stars: "★★★", weight: 10, color: "#ffd96a" } };
 const cardImg = id => ART ? `art/cards/${id}.webp` : null;
 
-// 背景音樂（Katie 用 Gemini 做的 AI 音樂）：一般用慵懶的 Sunbeams，小弟和泡泡紙用輕快的 Zoomies
+// 背景音樂（摩卡與貓貓小隊 用 Gemini 做的 AI 音樂）：一般用慵懶的 Sunbeams，小弟和泡泡紙用輕快的 Zoomies
 const MUSIC = { calm: "audio/sunbeams.mp3", busy: "audio/zoomies.mp3", zoomies: "audio/gallop.mp3" };
 
 const GAME_URL_DEFAULT = "https://mochachen1225-create.github.io/scratch-it/";

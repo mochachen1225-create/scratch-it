@@ -174,7 +174,7 @@ renderHome();
   $("#bookBtn").hidden = !ART;
   const bagN = CARDS.reduce((a, cd) => a + (save.bag[cd.id] || 0), 0);
   $("#bookBtn").textContent = T("📒 收集冊 {0}/{1}", foundCount(), CARDS.length) + (bagN ? " 🎁" : "");
-  // 貓抓板花紋：程式畫／AI 圖，給 Katie 比較
+  // 貓抓板花紋：程式畫／AI 圖，給 摩卡與貓貓小隊 比較
   $("#texBtn").hidden = !ART || save.mat !== "cardboard";
   $("#texBtn").textContent = T("瓦楞紙花紋：{0}（點一下換）", T(TEX_NAME[save.tex]));
 }
