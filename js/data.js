@@ -68,7 +68,8 @@ const ART = window.NO_ART ? null : {
   // 架構師的伸爪圖還沒有（之前那張其實是小弟的掌），先用程式畫的掌
   grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp" },
   white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp", pawOut: "art/white_paw_out.webp", pawIn: "art/white_paw_in.webp" },
-  flutes: "art/tex_flutes.jpg"
+  // 瓦楞紙花紋 B：FLUX 生成的無縫貼圖（花紋 A 是程式畫的），兩種輪流用
+  flux: "art/tex_flux.jpg"
 };
 // 材質插畫接口（之後 AI 圖到了填路徑；null＝用程式畫的）
 // base：紙面無縫貼圖（拼貼鋪滿）；hole：一個洞的貼圖（沙發露棉花、布邊毛邊）；under：碎掉後露出的底層無縫貼圖

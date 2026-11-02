@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.5.1";
+const VERSION = "0.5.2";
 const CHANGES = [
+  "瓦楞紙有兩種花紋輪流出現，首頁可以切換",
   "沙發變得很難抓破：要重複抓，先起皺、勾出線頭、扯開縫，最後「啪」裂開露出棉花（感謝玩家回報）",
   "瓦楞紙改成沿著紙條扒開的長條抓痕（感謝玩家回報）",
   "同一張卡找到 3 次會變閃亮版；整人卡會噗一聲",
@@ -120,7 +121,7 @@ for (const a of Object.values(MAT_ART)) for (const src of Object.values(a)) load
 function fillTile(c, im, x, y, w, h, size = 200) {
   const k = size / im.width; c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.scale(k, k); c.fillStyle = c.createPattern(im, "repeat"); c.fillRect(x / k, y / k, w / k, h / k); c.restore();
 }
-if (ART) { for (const id of Object.keys(CATS)) for (const k of Object.keys(ART[id])) loadImg(ART[id][k]); loadImg(ART.flutes); }
+if (ART) { for (const id of Object.keys(CATS)) for (const k of Object.keys(ART[id])) loadImg(ART[id][k]); loadImg(ART.flux); }
 
 /* ================= 首頁 ================= */
 function renderHome() {
@@ -158,7 +159,7 @@ renderHome();
   $("#bookBtn").textContent = T("📒 收集冊 {0}/{1}", foundCount(), CARDS.length) + (bagN ? " 🎁" : "");
   // 貓抓板花紋：程式畫／AI 圖，給 Katie 比較
   $("#texBtn").hidden = !ART || save.mat !== "cardboard";
-  $("#texBtn").textContent = save.tex === "ai" ? T("貓抓板花紋：AI 圖（點一下換程式畫）") : T("貓抓板花紋：程式畫（點一下換 AI 圖）");
+  $("#texBtn").textContent = T("瓦楞紙花紋：{0}（點一下換）", T(TEX_NAME[save.tex]));
 }
 $("#startBtn").addEventListener("click", () => { FX.tap(); startGame(); });
 $("#albumBtn").addEventListener("click", () => { FX.tap(); openAlbum(); });
@@ -166,7 +167,11 @@ $("#albumBtn2").addEventListener("click", () => { FX.tap(); openAlbum(); });
 $("#albumBack").addEventListener("click", () => { FX.tap(); show("home"); renderHome(); });
 $("#homeBtn").addEventListener("click", () => { FX.tap(); show("home"); renderHome(); });
 $("#againBtn").addEventListener("click", () => { FX.tap(); startGame(); });
-$("#texBtn").addEventListener("click", () => { save.tex = save.tex === "ai" ? "code" : "ai"; persist(); FX.tap(); renderHome(); });
+// 瓦楞紙花紋：輪流（每張畫換一種，避免膩）→ 只用程式畫 → 只用 FLUX 圖
+const TEX_NAME = { mix: "輪流", code: "花紋 A（程式畫）", flux: "花紋 B（AI 圖）" };
+// 舊存檔的預設是 code（不是玩家選的），升級時改成輪流
+if (save.texV !== 2) { save.tex = "mix"; save.texV = 2; }
+$("#texBtn").addEventListener("click", () => { save.tex = { mix: "code", code: "flux", flux: "mix" }[save.tex]; persist(); FX.tap(); renderHome(); });
 $("#langBtn").textContent = LANG === "en" ? "中文" : "English";
 $("#langBtn").addEventListener("click", () => setLang(LANG === "en" ? "zh" : "en"));
 $("#verBtn").textContent = `v${VERSION} ${T("🆕 更新了什麼")}`;
@@ -199,10 +204,12 @@ function paintBase(m) {
     // 有材質插畫就拼貼鋪滿（泡泡紙的泡泡位置還是照程式排）
     fillTile(c, tile, 0, 0, Wd, Ht);
     c.strokeStyle = "rgba(0,0,0,.25)"; c.lineWidth = 6; c.strokeRect(3, 3, Wd - 6, Ht - 6);
-  } else if (m.id === "cardboard" && save.tex === "ai" && texImg) {
-    // AI 生成的瓦楞波浪紋，拼貼鋪滿
-    const pat = c.createPattern(texImg, "repeat"); const k = 200 / texImg.width;
-    c.save(); c.scale(k, k); c.fillStyle = pat; c.fillRect(0, 0, Wd / k, Ht / k); c.restore();
+  } else if (m.id === "cardboard" && G.tex === "flux" && texImg) {
+    // FLUX 的瓦楞波浪紋：一張 15 條波浪，縮成 105px 拼貼＝一條波浪對齊一條 7px 的紙，下移半條讓波浪在紙條正中間（抓痕剛好撕在波浪上）
+    const k = 105 / texImg.width;
+    c.save(); c.translate(0, 3.5); c.scale(k, k); c.fillStyle = c.createPattern(texImg, "repeat"); c.fillRect(0, -10, Wd / k, (Ht + 10) / k); c.restore();
+    // 每條紙深淺不一（跟花紋 A 一樣），不會一整片太平
+    for (let y = 0; y < Ht; y += 7) { const t = rand(-1, 1); c.fillStyle = t > 0 ? `rgba(255,240,215,${t * .12})` : `rgba(80,50,20,${-t * .12})`; c.fillRect(0, y, Wd, 7); c.fillStyle = "rgba(95,62,28,.25)"; c.fillRect(0, y + 5.8, Wd, 1.2); }
     c.strokeStyle = "rgba(70,45,20,.55)"; c.lineWidth = 6; c.strokeRect(3, 3, Wd - 6, Ht - 6);
   } else if (m.id === "bubble") {
     // 泡泡紙：一格格小泡泡，交錯排滿
@@ -266,7 +273,8 @@ function startGame() {
   if (m.mode === "bubble") setupBubbles(); else setupHoles();
   paintUnder(m);
   texImg = null;
-  if (m.id === "cardboard" && save.tex === "ai" && ART) { imgCache[ART.flutes] && imgCache[ART.flutes].then(im => { texImg = im; if (G && im) { paintBase(m); } }); }
+  G.tex = !ART ? "code" : save.tex === "mix" ? (save.no % 2 ? "flux" : "code") : save.tex;
+  if (m.id === "cardboard" && G.tex === "flux") { texImg = imgReady[ART.flux] || null; if (!texImg) loadImg(ART.flux).then(im => { texImg = im; if (G && im && G.holes === 0) paintBase(m); }); }
   paintBase(m);
   setPaw(false); $("#paw").style.opacity = .85; G.paw.x = Wd / 2; G.paw.y = Ht * .62; movePaw();
   $("#catChip").innerHTML = `${catImg(save.cat, "sit", "chippic")}<span>${W(cat.name)}</span>`;
