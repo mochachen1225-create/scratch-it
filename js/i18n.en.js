@@ -16,6 +16,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "背景音樂調小聲、不會再兩首疊在一起（感謝玩家回報）": "Background music is quieter and never plays two songs at once (thanks to player feedback)",
   "材質改成一條路解鎖：用瓦楞紙抓 2 張開泡泡紙、用泡泡紙抓 1 張開沙發⋯⋯": "Materials now unlock one after another: 2 cardboard paintings open bubble wrap, 1 bubble wrap painting opens the sofa…",
   "用{0}抓完 {1} 張": "Finish {1} on the {0}",
   "三隻貓都用{0}抓過": "Scratch the {0} with all three cats",

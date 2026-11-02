@@ -4,15 +4,26 @@ const FX = {
   ctx: null, noise: null, scratchGain: null, filter: null, muted: false, mat: null,
   init(muted) { this.muted = muted; },
   // 背景音樂：音量壓低、循環；靜音時一起停
-  bgm: {}, track: null,
+  // iPhone 的 audio.volume 是唯讀（永遠最大聲），所以音樂接到 Web Audio 的音量節點上調音量
+  bgm: {}, track: null, BGM_VOL: 0.1, DANCE_VOL: 0.2,
+  setVol(a, v) {
+    if (this.ctx && !a._g) {
+      try { const src = this.ctx.createMediaElementSource(a); a._g = this.ctx.createGain(); src.connect(a._g).connect(this.ctx.destination); } catch {}
+    }
+    if (a._g) { a._g.gain.cancelScheduledValues(this.ctx.currentTime); a._g.gain.value = v; a.volume = 1; } else a.volume = v;
+  },
+  // 播放時可能還在等 play() 的結果，這時候切歌，等它開始播再檢查一次，不是現在要的就停掉（避免兩首重疊）
+  playSafe(a, key) { const pr = a.play(); if (pr) pr.then(() => { if (this.muted || this.track !== key) a.pause(); }).catch(() => {}); },
   music(name) {
     this.wantTrack = name;
-    if (this.muted || !this.unlocked || typeof MUSIC === "undefined") { for (const a of Object.values(this.bgm)) a.pause(); return; }
+    if (this.muted || !this.unlocked || typeof MUSIC === "undefined") { for (const a of Object.values(this.bgm)) a.pause(); if (this.danceA) this.danceA.pause(); this.dancing = false; return; }
+    if (this.dancing) return;            // 跳舞時不放背景音樂，跳完會接回來
+    this.track = name;
     for (const [k, a] of Object.entries(this.bgm)) if (k !== name) a.pause();
     let a = this.bgm[name];
-    if (!a) { a = this.bgm[name] = new Audio(MUSIC[name]); a.loop = true; a.volume = 0.22; }
-    if (a.paused) a.play().catch(() => {});
-    this.track = name;
+    if (!a) { a = this.bgm[name] = new Audio(MUSIC[name]); a.loop = true; }
+    this.setVol(a, this.BGM_VOL);
+    if (a.paused) this.playSafe(a, name);
   },
   unlock() {
     if (!this.unlocked) { this.unlocked = true; if (this.wantTrack) setTimeout(() => this.music(this.wantTrack), 0); }
@@ -127,18 +138,23 @@ const FX = {
   // 跳舞音樂：〈Zoomies〉68 秒後最熱鬧的一段，放幾秒就淡出
   danceMusic(sec) {
     if (this.muted || !this.unlocked || typeof MUSIC === "undefined") return;
+    this.dancing = true; this.track = "dance";
     for (const a of Object.values(this.bgm)) a.pause();
     const a = this.danceA || (this.danceA = new Audio(MUSIC.busy));
-    a.volume = 0.4;
-    const go = () => { try { a.currentTime = 68; } catch {} a.play().catch(() => {}); };
+    clearTimeout(this.danceOff); this.setVol(a, this.DANCE_VOL);
+    const go = () => { try { a.currentTime = 68; } catch {} this.playSafe(a, "dance"); };
     if (a.readyState >= 1) go(); else a.addEventListener("loadedmetadata", go, { once: true });
     clearTimeout(this.danceT); this.danceT = setTimeout(() => this.danceStop(), sec * 1000);
   },
   danceStop() {
-    const a = this.danceA; clearTimeout(this.danceT);
-    if (a && !a.paused) {
-      const fade = setInterval(() => { a.volume = Math.max(0, a.volume - 0.05); if (a.volume <= 0) { clearInterval(fade); a.pause(); if (this.wantTrack) this.music(this.wantTrack); } }, 40);
-    }
+    clearTimeout(this.danceT);
+    if (!this.dancing) return;
+    this.dancing = false;
+    const a = this.danceA;
+    // 淡出 0.4 秒後一定停掉（不靠讀音量判斷，iPhone 讀到的音量永遠是 1）
+    if (a && a._g) a._g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+    clearTimeout(this.danceOff);
+    this.danceOff = setTimeout(() => { if (a) a.pause(); if (this.wantTrack) this.music(this.wantTrack); }, 400);
   },
   // 找到驚喜插畫：越稀有音越多
   reveal(rarity = 1) {
