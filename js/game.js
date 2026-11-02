@@ -1,6 +1,9 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.5.6";
+const VERSION = "0.6.0";
 const CHANGES = [
+  "好感度：每隻貓最多 5 顆❤️，只會越來越愛；滿 5 顆送你回禮",
+  "12 個小禮物（收集冊第二頁），可以選一隻貓送，送到最愛的有專屬反應",
+  "愛心多了，貓會在首頁眨眼、抓畫時跑來蹭你、跳招牌舞步、睡在首頁",
   "背景音樂調小聲、不會再兩首疊在一起（感謝玩家回報）",
   "材質改成一條路解鎖：用瓦楞紙抓 2 張開泡泡紙、用泡泡紙抓 1 張開沙發⋯⋯",
   "泡泡紙的「啵」變得清脆大聲，偶爾有特別大的一顆；架構師換上插畫貓掌",
@@ -47,7 +50,7 @@ if (LANG === "en") document.title = "Scratch It!";
 
 /* ================= 存檔（只存在這支手機） ================= */
 const SAVE_KEY = "scratch-it-save";
-const save = Object.assign({ paintings: 0, time: 0, cats: [], maxHoles: 0, totalHoles: 0, frenzy: 0, tex: "code", unlocked: ["cardboard"], album: [], cat: "orange", mat: "cardboard", no: 0, muted: false, found: {}, bag: {}, reward: false },
+const save = Object.assign({ paintings: 0, time: 0, cats: [], maxHoles: 0, totalHoles: 0, frenzy: 0, tex: "code", unlocked: ["cardboard"], album: [], cat: "orange", mat: "cardboard", no: 0, muted: false, found: {}, bag: {}, reward: false, love: {}, backs: {}, husky: false },
   store.get(SAVE_KEY, {}));
 function persist() {
   // 作品集的圖比較大：存不下就丟掉最舊的再試
@@ -120,7 +123,7 @@ function checkUnlocks() {
 
 /* ================= 插畫（AI 圖，載入失敗就用程式畫的） ================= */
 function catImg(id, pose, cls = "") {
-  const src = ART && ART[id] && ART[id][pose];
+  const src = ART && ART[id] && (ART[id][pose] || (pose !== "pawOut" && pose !== "pawIn" ? ART[id].sit : null));
   const fallback = catSVG(id, pose === "box" || pose === "tail" ? "box" : pose === "lie" ? "lie" : "sit");
   if (!src) return fallback;
   return `<img class="${cls}" src="${src}" alt="" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(fallback)}')">`;
@@ -137,19 +140,25 @@ for (const a of Object.values(MAT_ART)) for (const src of Object.values(a)) load
 function fillTile(c, im, x, y, w, h, size = 200) {
   const k = size / im.width; c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.scale(k, k); c.fillStyle = c.createPattern(im, "repeat"); c.fillRect(x / k, y / k, w / k, h / k); c.restore();
 }
-if (ART) { for (const id of Object.keys(CATS)) for (const k of Object.keys(ART[id])) loadImg(ART[id][k]); loadImg(ART.flux); }
+if (ART) { for (const id of Object.keys(CATS)) for (const k of Object.keys(ART[id] || {})) loadImg(ART[id][k]); loadImg(ART.flux); }
 
 /* ================= 首頁 ================= */
 function renderHome() {
   FX.music("calm");
   const cats = $("#cats"); cats.innerHTML = "";
-  for (const [id, c] of Object.entries(CATS)) {
+  if (!save.husky && save.cat === "husky") save.cat = "orange";
+  cats.classList.toggle("four", !!save.husky);
+  for (const id of chars()) {
+    const c = CATS[id], h = hearts(id);
     const b = document.createElement("button");
-    b.className = "cat" + (save.cat === id ? " on" : "");
-    b.innerHTML = `${catImg(id, "sit", "catpic")}<b>${W(c.name)}</b><small>${W(c.style)}</small>`;
+    b.className = "cat" + (save.cat === id ? " on" : "") + (h >= 1 ? " blink" : "");
+    b.innerHTML = `${catImg(id, "sit", "catpic")}<b>${W(c.name)}</b><small>${W(c.style)}</small>${c.egg ? "" : `<i class="hearts">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</i>`}`;
     b.addEventListener("click", () => { save.cat = id; persist(); FX.tap(); renderHome(); });
     cats.appendChild(b);
   }
+  // ❤️4：最愛你的那隻貓睡在「開始抓」旁邊
+  const nap = MAIN_CATS.filter(id => hearts(id) >= 4).sort((a, b) => (save.love[b] || 0) - (save.love[a] || 0))[0];
+  $("#napCat").innerHTML = nap ? catImg(nap, "lie", "nappic") : ""; $("#napCat").hidden = !nap;
   const mats = $("#mats"); mats.innerHTML = "";
   for (const m of MATERIALS) {
     const open = save.unlocked.includes(m.id);
@@ -344,7 +353,9 @@ function setupHoles() {
 const MOTIFS = ["heart", "fish", "paw", "catface", "star"];
 function pickCard() {
   // 依稀有度抽；還沒收集到的機率高一點
-  const pool = CARDS.map(cd => ({ cd, w: RARITY[cd.rarity].weight / CARDS.filter(x => x.rarity === cd.rarity).length * (save.found[cd.id] ? 1 : 1.6) }));
+  // 先抽「驚喜插畫 60%／小禮物 40%」，再照稀有度抽
+  const group = Math.random() < .6 ? PIC_CARDS : GIFT_CARDS;
+  const pool = group.map(cd => ({ cd, w: RARITY[cd.rarity].weight / Math.max(1, group.filter(x => x.rarity === cd.rarity).length) * (save.found[cd.id] ? 1 : 1.6) }));
   let r = Math.random() * pool.reduce((a, x) => a + x.w, 0);
   for (const x of pool) if ((r -= x.w) <= 0) return x.cd;
   return pool[0].cd;
@@ -596,6 +607,7 @@ function burstPatch(p, chain) {
   track2(cx, cy);
   for (let i = 0; i < 34; i++) spawnDebris(cx + rand(-24, 24), cy + rand(-24, 24), rand(-1, 1), rand(-1, .3));
   FX.pop(chain); FX.vibrate(12 + chain * 4);
+  if (G.catId === "husky" && Math.random() < .2 && performance.now() - (G.lastHowl || 0) > 4000) { G.lastHowl = performance.now(); FX.howl(); bubble(T("嗷嗚～"), cx - 20, cy - 70); }
   G.bestChain = Math.max(G.bestChain || 0, chain + 1);
   if (chain >= 1) {
     // 連鎖只留一個泡泡，數字往上跳
@@ -666,7 +678,7 @@ function claw(x0, y0, x1, y1, power = 1) {
   // 暴衝時：爪痕變粗，每一爪打兩排洞，再加上第二隻掌一起抓（共約三倍）
   const z = G.zoom === 1 && power > 0, lanes = z ? [-HEX * .3, HEX * .3] : [0];
   if (z) power *= 1.8;
-  power = Math.abs(power);
+  power = Math.abs(power) * (G.catId === "husky" ? 1.4 : 1);
   for (let i = 0; i < 4; i++) {
     const off = (i - 1.5) * sp;
     const ax = x0 + nx * off, ay = y0 + ny * off, bx = x1 + nx * off, by = y1 + ny * off;
@@ -755,7 +767,7 @@ function onMove(x, y) {
       claw(G.paw.x, G.paw.y, G.paw.x + Math.cos(a) * l, G.paw.y + Math.sin(a) * l, .9);
     }
     if (Math.random() < len / 1400) punchArea(G.paw.x, G.paw.y, 20);
-  } else return;   // 藍灰貓在動畫迴圈裡處理
+  } else return;   // 藍灰貓、哈士奇在動畫迴圈裡處理
   track(prev);
 }
 function track(prev) {
@@ -826,8 +838,9 @@ function loop(now) {
       G.lx += (G.fx - G.lx) * .3; G.ly += (G.fy - G.ly) * .3;
       if (Math.hypot(G.lx - ox, G.ly - oy) > .3) onMove(G.lx, G.ly); else FX.scratch(0);
     }
-    if (G.catId === "grey") {
-      const prev = { x: G.paw.x, y: G.paw.y }, k = G.m.tough ? .16 : .18;
+    if (G.catId === "grey" || G.catId === "husky") {
+      // 哈士奇：跟得比較快、會甩過頭一點（戲劇性的大弧線）
+      const prev = { x: G.paw.x, y: G.paw.y }, k = G.catId === "husky" ? (G.m.tough ? .26 : .32) : G.m.tough ? .16 : .18;
       G.paw.x += (G.fx - G.paw.x) * k; G.paw.y += (G.fy - G.paw.y) * k;
       if (Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y) > .4) { claw(prev.x, prev.y, G.paw.x, G.paw.y); track(prev); }
       else FX.scratch(0);
@@ -848,6 +861,7 @@ function loop(now) {
     // 長按不動：蓋肉球印章，一圈一圈往外蓋滿
     const pr = G.press;
     if (pr && now - pr.t > 450 && now > pr.next) { stampAt(pr); pr.next = now + (pr.n < 3 ? 160 : 70); }
+    if (!G.rubbed && G.scratchMs > 8000 && hearts(G.catId) >= 2 && Math.random() < .004) rub();
     if (!G.zoom && ((G.frenzyRun >= 4 && G.progress >= G.zoomP) || G.scratchMs > G.zoomAt)) startZoomies(now);
   }
   if (G.zoom === 1) {
@@ -960,6 +974,16 @@ function rowClear(y, hgt) {
   FX.sweep();
   const b = bubble(G.rows > 1 ? T("整排清光！×{0}", G.rows) : T("整排清光！"), Wd / 2 - 70, y - 50); b.classList.add("big");
 }
+// ❤️2：抓到一半，這隻貓從畫面下緣探頭來蹭你（呼嚕聲）；小弟太熱情，會把紙屑撞飛
+function rub() {
+  G.rubbed = true;
+  const el = $("#peek"), src = ART && ART.peek && ART.peek[G.catId];
+  el.innerHTML = src ? `<img src="${src}" alt="">` : `<div class="crop">${catImg(G.catId, "sit", "peekpic")}</div>`;
+  el.hidden = false; el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  FX.purr(2); bubble(T("蹭蹭～"), Wd / 2 - 30, Ht - 220);
+  if (G.catId === "white") for (let i = 0; i < 30; i++) G.particles.push({ x: rand(Wd * .3, Wd * .7), y: Ht - rand(4, 30), vx: rand(-220, 220), vy: rand(-600, -300), rot: rand(0, 6), vr: rand(-10, 10), w: rand(5, 10), h: rand(2, 4), color: G.m.base2 || "#fff", floor: Ht - rand(4, G.rainBand) });
+  setTimeout(() => { el.hidden = true; }, 2600);
+}
 function startZoomies(now) {
   G.zoom = 1; G.zoomUntil = now + 8000;
   FX.music("zoomies"); FX.vibrate([40, 30, 40]);
@@ -978,7 +1002,7 @@ function endZoomies() {
 /* ================= 抓完 ================= */
 function coverage() { return G.holes / ((G.hx || G.bub).total || 1); }
 // 畫名：依抓法自動決定（18 種流派，作品集會收集）。符合的照順序挑第一個；都不符合就從普通的流派裡隨機（貓的個性會偏向某幾種）
-const STYLE_FALLBACK = { orange: ["minimal", "symmetry"], grey: ["ukiyoe", "pointillism"], white: ["fauvism", "action"] };
+const STYLE_FALLBACK = { orange: ["minimal", "symmetry"], grey: ["ukiyoe", "pointillism"], white: ["fauvism", "action"], husky: ["action", "futurism"] };
 function artStyle(sec, done) {
   const cov = coverage(), S = G.strokes, n = S.length || 1;
   const tot = S.reduce((s, x) => s + x.path, 0) || 1;
@@ -1039,9 +1063,10 @@ function finish() {
     const id = G.card.id; firstFind = !save.found[id];
     save.found[id] = (save.found[id] || 0) + 1;
     if (G.card.kind === "treasure") save.bag[id] = (save.bag[id] || 0) + 1;
-    if (!save.reward && CARDS.every(cd => save.found[cd.id])) { save.reward = true; complete = true; }
+    if (!save.reward && PIC_CARDS.every(cd => save.found[cd.id])) { save.reward = true; complete = true; }
   }
   const fresh = checkUnlocks();
+  const loveUp = MAIN_CATS.includes(G.catId) ? addLove(G.catId, LOVE.paint + (G.found ? LOVE.found : 0)) : 0;
   save.styles = save.styles || {}; info.newStyle = !save.styles[info.style]; save.styles[info.style] = (save.styles[info.style] || 0) + 1;
   G.rainBand = Ht * .3; G.rainUntil = performance.now() + 1100;
   setTimeout(diveIn, 1100);
@@ -1059,12 +1084,17 @@ function finish() {
     persist();
     G = null;
     // 解鎖新材質或破紀錄：三隻貓出來跳舞
-    if (complete) dance(T("全收集！")).then(() => showCard(REWARD, true));
-    else if (fresh.length) dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
-    else if (record) dance(T("新紀錄！一張抓了 {0} 下", info.holes.toLocaleString()));
+    let seq = null;
+    if (complete) seq = dance(T("全收集！")).then(() => showCard(REWARD, true));
+    else if (fresh.length) seq = dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
+    else if (record) seq = dance(T("新紀錄！一張抓了 {0} 下", info.holes.toLocaleString()));
     else if (info.newStyle && save.paintings > 1) toast(T("🎨 新流派：{0}！作品集 {1}／{2}", W(ART_STYLES[info.style]), Object.keys(save.styles).length, Object.keys(ART_STYLES).length), 3000);
     else if (info.card && !info.found) toast(T("差一點就找到了！下面藏著一張{0}卡 {1}", T(RARITY[CARDS.find(cd => cd.id === info.card).rarity].name), RARITY[CARDS.find(cd => cd.id === info.card).rarity].stars), 3200);
     else if (firstFind && info.card && CARDS.find(cd => cd.id === info.card).kind === "treasure") toast(T("🎁 寶物放進寶物袋了，可以到收集冊送給貓咪"), 3200);
+    // 好感度多一顆心、哈士奇彩蛋：排在前面的慶祝之後
+    seq = seq || Promise.resolve();
+    if (loveUp) seq = seq.then(() => heartPop(info.cat, loveUp));
+    seq.then(checkHusky);
   }, 3300);
 }
 // 貓跳進紙屑堆：畫在爪痕那一層，再用紙屑堆蓋住，只露出耳朵（小弟只露尾巴）
@@ -1072,7 +1102,7 @@ const moundY = (x, y0) => y0 + 120 * Math.pow(Math.abs(x - Wd / 2) / (Wd / 2), 1
 async function diveIn() {
   if (!G) return;
   const id = G.catId, w = Math.min(Wd * .5, 220), top = Ht * .56, c = dctx;
-  FX.plop(); bubble(T("噗通！"), Wd / 2 - 30, top - 70);
+  FX.plop(); bubble(id === "husky" ? T("哼，還不夠破。") : T("噗通！"), Wd / 2 - 60, top - 70);
   let y0;
   if (id === "white") {
     const k = CATS.white;
@@ -1101,17 +1131,22 @@ async function diveIn() {
   }
   G.rainBand = Ht - y0; G.rainUntil = performance.now() + 900;
 }
-function showUnlock(m) {
-  $("#unlockIc").innerHTML = `<div>${m.icon}</div>${catImg(save.cat, "box", "unlockpic")}`;
-  $("#unlockTxt").textContent = T("解鎖新材質：{0}！", W(m.name));
+function showUnlock(m) { return popup(`<div>${m.icon}</div>${catImg(save.cat, "box", "unlockpic")}`, T("解鎖新材質：{0}！", W(m.name))); }
+// 共用的彈窗：按「太好了！」才關，回傳 Promise 方便排隊
+function popup(icon, text, btn) {
+  $("#unlockIc").innerHTML = icon; $("#unlockTxt").textContent = text; $("#unlockOk").textContent = btn || T("太好了！");
   $("#unlockPop").hidden = false; FX.unlockChime();
+  return new Promise(res => { popup.res = res; });
 }
-$("#unlockOk").addEventListener("click", () => { $("#unlockPop").hidden = true; FX.tap(); });
+$("#unlockOk").addEventListener("click", () => { $("#unlockPop").hidden = true; FX.tap(); const r = popup.res; popup.res = null; if (r) r(); });
 // 跳舞慶祝：三隻貓的坐姿插畫用程式動起來（彈跳、擺動、壓扁），配〈Zoomies〉最熱鬧的一段
 // 點跳舞的貓：喵一聲、跳更高；點旁邊結束
-function dance(text, { pose = "sit", bg = null, img = null, music = true } = {}) {
+function dance(text, { pose = "sit", bg = null, img = null, music = true, star = null } = {}) {
   const d = $("#dance");
-  d.querySelector(".dancers").innerHTML = Object.keys(CATS).map(id => `<div class="dancer d-${id}${pose === "tail" ? " still" : ""}" data-id="${id}">${catImg(id, pose, "dancepic")}</div>`).join("");
+  // 收到禮物的那隻站中間；❤️3 的貓會跳招牌舞步
+  let ids = chars();
+  if (star) { const o = ids.filter(x => x !== star); ids = [o[0], star, ...o.slice(1)]; }
+  d.querySelector(".dancers").innerHTML = ids.map(id => `<div class="dancer d-${id}${pose === "tail" ? " still" : ""}${hearts(id) >= 3 ? " sig" : ""}${id === star ? " star" : ""}" data-id="${id}">${catImg(id, pose, "dancepic")}</div>`).join("");
   d.querySelector(".gift").innerHTML = img ? `<img src="${img}" alt="">` : "";
   d.style.backgroundImage = bg ? `linear-gradient(rgba(253,243,227,.35), rgba(253,243,227,.55)), url(${bg})` : "";
   d.querySelector("p").textContent = text;
@@ -1125,16 +1160,54 @@ function dance(text, { pose = "sit", bg = null, img = null, music = true } = {})
       const k = e.target.closest(".dancer");
       if (!k) return done();
       k.classList.remove("jump"); void k.offsetWidth; k.classList.add("jump");
-      FX.meow(k.dataset.id); arm(3000);
+      if (k.dataset.id === "husky") FX.howl(); else FX.meow(k.dataset.id); arm(3000);
     };
     arm(4800);
   });
 }
-const foundCount = () => CARDS.filter(cd => save.found[cd.id]).length;
+const foundCount = (list = CARDS) => list.filter(cd => save.found[cd.id]).length;
+/* ================= 好感度（只會越來越愛） ================= */
+const chars = () => Object.keys(CATS).filter(id => !CATS[id].egg || save[id]);
+const hearts = id => HEART_AT.filter(v => (save.love[id] || 0) >= v).length;
+// 加好感，回傳這次升到第幾顆心（沒升就 0）
+function addLove(id, pts) {
+  if (!MAIN_CATS.includes(id)) return 0;
+  const before = hearts(id); save.love[id] = (save.love[id] || 0) + pts;
+  const after = hearts(id);
+  if (after >= 5 && !save.backs[id]) save.backs[id] = true;
+  persist();
+  return after > before ? after : 0;
+}
+function heartPop(id, h) {
+  const icon = `${catImg(id, h >= 5 ? "lie" : "sit", "unlockpic")}<div class="hearts big">${"❤️".repeat(h)}${"🤍".repeat(5 - h)}</div>`;
+  const p = popup(icon, T("{0} 更愛你了！{1}", W(CATS[id].name), T(HEART_TEXT[h])));
+  FX.purr(1.6);
+  return h >= 5 ? p.then(() => showBack(id)) : p;
+}
+function showBack(id) {
+  const g = GIFT_BACK[id];
+  $("#viewerImg").src = cardImg(g.id); $("#viewerPic").classList.remove("shiny");
+  $("#viewerTxt").textContent = `🎁 ${T(g.name)}\n${T(g.say)}`;
+  return openViewer();
+}
+// 彩蛋：哈士奇（三隻都滿 5 顆心，或流派收集 18／18）
+function checkHusky() {
+  if (save.husky) return;
+  const styles = Object.keys(save.styles || {}).length;
+  if (!(MAIN_CATS.every(id => hearts(id) >= 5) || styles >= Object.keys(ART_STYLES).length)) return;
+  save.husky = true; persist();
+  dance(T("哈士奇來玩了！可以在首頁選牠"), { img: ART && ART.husky.sit, star: "husky" });
+}
 /* ================= 收集冊＋寶物袋 ================= */
-function openBook() {
+let bookTab = "pic";
+function openBook(tab) {
+  if (tab) bookTab = tab;
+  const list = bookTab === "pic" ? PIC_CARDS : GIFT_CARDS;
+  $("#tabPic").textContent = T("🖼️ 驚喜插畫 {0}/{1}", foundCount(PIC_CARDS), PIC_CARDS.length);
+  $("#tabGift").textContent = T("🎀 小禮物 {0}/{1}", foundCount(GIFT_CARDS), GIFT_CARDS.length);
+  $("#tabPic").classList.toggle("on", bookTab === "pic"); $("#tabGift").classList.toggle("on", bookTab === "gift");
   const box = $("#book"); box.innerHTML = "";
-  for (const cd of CARDS) {
+  for (const cd of list) {
     const n = save.found[cd.id] || 0, r = RARITY[cd.rarity];
     const el = document.createElement("button"); el.className = "slot" + (n ? "" : " unk") + (n >= SHINY_AT ? " shiny" : "");
     el.style.background = r.color;
@@ -1143,20 +1216,29 @@ function openBook() {
     box.appendChild(el);
   }
   const rw = $("#rewardSlot");
+  rw.hidden = bookTab !== "pic";
   rw.className = "slot reward" + (save.reward ? "" : " unk");
-  rw.innerHTML = save.reward ? `<img src="${cardImg(REWARD.id)}" alt=""><span>${T(REWARD.name)}</span>` : `<i>🔒</i><span>${T("全收集獎勵：找齊 {0} 張", CARDS.length)}</span>`;
+  rw.innerHTML = save.reward ? `<img src="${cardImg(REWARD.id)}" alt=""><span>${T(REWARD.name)}</span>` : `<i>🔒</i><span>${T("全收集獎勵：找齊 {0} 張", PIC_CARDS.length)}</span>`;
   rw.onclick = () => { FX.tap(); if (save.reward) showCard(REWARD, true); };
+  // ❤️5 回禮
+  $("#backs").innerHTML = MAIN_CATS.map(id => save.backs[id]
+    ? `<button class="slot back" data-id="${id}"><span class="pic"><img src="${cardImg(GIFT_BACK[id].id)}" alt=""></span><span>${T(GIFT_BACK[id].name)}</span></button>`
+    : `<button class="slot back unk" data-id="${id}"><span class="pic">${catImg(id, "sit", "")}</span><span>${W(CATS[id].name)}<br><small class="hearts">${"❤️".repeat(hearts(id))}${"🤍".repeat(5 - hearts(id))}</small></span></button>`).join("");
+  $("#backs").onclick = e => { const b = e.target.closest(".back"); if (!b) return; FX.tap(); const id = b.dataset.id; if (save.backs[id]) showBack(id); else toast(T("{0}滿 5 顆❤️ 會送你回禮", W(CATS[id].name))); };
   $("#bookTitle").textContent = T("📒 收集冊 {0}/{1}", foundCount(), CARDS.length);
   renderBag();
   show("bookScreen");
 }
+$("#tabPic").addEventListener("click", () => { FX.tap(); openBook("pic"); });
+$("#tabGift").addEventListener("click", () => { FX.tap(); openBook("gift"); });
+function openViewer() { $("#viewer").hidden = false; return new Promise(res => { openViewer.res = res; }); }
 function showCard(cd, reward) {
   $("#viewerImg").src = cardImg(cd.id);
   const n = save.found[cd.id] || 0, shiny = !reward && n >= SHINY_AT;
   $("#viewerPic").classList.toggle("shiny", shiny);
   $("#viewerTxt").textContent = reward ? T("🎉 全收集獎勵！謝謝你陪三隻貓抓了這麼多")
     : `${RARITY[cd.rarity].stars} ${T(RARITY[cd.rarity].name)}・${T(cd.say)}` + (shiny ? `\n✨ ${T("閃亮版")}` : `\n${T("找到 {0} 次（{1} 次變閃亮版）", n, SHINY_AT)}`);
-  $("#viewer").hidden = false;
+  return openViewer();
 }
 function renderBag() {
   const bag = $("#bag"); bag.innerHTML = "";
@@ -1165,18 +1247,33 @@ function renderBag() {
   for (const cd of items) {
     const el = document.createElement("div"); el.className = "bagitem";
     el.innerHTML = `<img src="${cardImg(cd.id)}" alt=""><span>${W(cd.name)} ×${save.bag[cd.id]}</span><button class="btn btn-pink">${T("送給貓咪")}</button>`;
-    el.querySelector("button").addEventListener("click", () => gift(cd));
+    el.querySelector("button").addEventListener("click", () => pickCat(cd));
     bag.appendChild(el);
   }
 }
-// 送寶物給貓：大部分開心跳舞；貓跳台會爬上去跳；高級貓窩……三隻都不理，跑去鑽紙箱
-function gift(cd) {
-  save.bag[cd.id]--; persist(); FX.tap();
+// 送禮：先選一隻貓
+function pickCat(cd) {
+  FX.tap();
+  $("#pickIc").innerHTML = `<img src="${cardImg(cd.id)}" alt="">`;
+  $("#pickTxt").textContent = T("要把{0}送給誰？", W(cd.name));
+  $("#pickCats").innerHTML = MAIN_CATS.map(id => `<button class="cat" data-id="${id}">${catImg(id, "sit", "catpic")}<b>${W(CATS[id].name)}</b><i class="hearts">${"❤️".repeat(hearts(id))}${"🤍".repeat(5 - hearts(id))}</i></button>`).join("");
+  $("#pickPop").hidden = false;
+  $("#pickCats").onclick = e => { const b = e.target.closest(".cat"); if (!b) return; $("#pickPop").hidden = true; gift(cd, b.dataset.id); };
+}
+$("#pickClose").addEventListener("click", () => { $("#pickPop").hidden = true; FX.tap(); });
+// 送寶物給貓：收到的那隻站中間；最愛的有專屬反應；貓跳台爬上去跳；高級貓窩……三隻都不理，跑去鑽紙箱
+function gift(cd, id) {
+  save.bag[cd.id]--; FX.tap();
+  const name = W(cd.name), c = W(CATS[id].name);
+  const fav = cd.like === CATS[id].like, pts = cd.like === "none" ? LOVE.none : fav ? LOVE.fav : cd.like === "all" ? LOVE.all : LOVE.gift;
+  const up = addLove(id, pts);
   let p;
   if (cd.id === "catbed") p = dance(T("送了高級貓窩……三隻全跑去鑽紙箱了"), { pose: "tail", img: cardImg(cd.id), music: false });
-  else if (cd.id === "cattree") p = dance(T("三隻爬上貓跳台跳舞！"), { bg: cardImg(cd.id) });
-  else p = dance(T("收到{0}，三隻好開心！", W(cd.name)), { img: cardImg(cd.id) });
-  p.then(renderBag);
+  else if (cd.id === "cattree") p = dance(T("三隻爬上貓跳台跳舞！"), { bg: cardImg(cd.id), star: id });
+  else if (fav) p = dance(`💕 ${T(FAV_LINE[id], name)}`, { img: cardImg(cd.id), star: id });
+  else p = dance(T("{0}收到{1}，好開心！", c, name), { img: cardImg(cd.id), star: id });
+  if (up) p = p.then(() => heartPop(id, up));
+  p.then(() => { checkHusky(); renderBag(); openBook(); });
 }
 $("#bookBtn").addEventListener("click", () => { FX.tap(); openBook(); });
 $("#bookBtn2").addEventListener("click", () => { FX.tap(); openBook(); });
@@ -1220,7 +1317,7 @@ async function buildCard(info) {
   // 文字
   const cat = CATS[info.cat];
   const title = LANG === "en" ? `“${W(ART_STYLES[info.style])} No.${info.no}”` : `《${W(ART_STYLES[info.style])} No.${info.no}》`;
-  const im = (await loadImg(ART && ART[info.cat] && ART[info.cat].lie)) || await svgImage(catSVG(info.cat, "sit"));
+  const im = (await loadImg(ART && ART[info.cat] && (ART[info.cat].lie || ART[info.cat].sit))) || await svgImage(catSVG(info.cat, "sit"));
   if (im) { const k = Math.min(190 / im.width, 190 / im.height); x.drawImage(im, 60 + (190 - im.width * k) / 2, 990 + (190 - im.height * k) / 2, im.width * k, im.height * k); }
   x.fillStyle = "#3a2e2a"; x.textAlign = "left";
   x.font = F(60, true); x.fillText(title, 270, 1050, 760);
@@ -1270,7 +1367,7 @@ function openAlbum() {
   };
   show("albumScreen");
 }
-$("#viewerClose").addEventListener("click", () => { $("#viewer").hidden = true; });
+$("#viewerClose").addEventListener("click", () => { $("#viewer").hidden = true; const r = openViewer.res; openViewer.res = null; if (r) r(); });
 
 if (!ART) $("#aiNote").hidden = true;
 // 舊存檔升級：已經達成的條件，打開遊戲就解鎖

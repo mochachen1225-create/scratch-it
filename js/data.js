@@ -6,21 +6,29 @@ const CATS = {
     name: "總編", style: "效率派", desc: "爪痕筆直整齊，抓最快",
     fur: "#f3a54a", stripe: "#d9802a", belly: "#ffe3bd", ear: "#f7b9a8", accessory: "glasses",
     spacing: 9, speed: 1.35,          // 爪痕間距（px）、抓爛度倍率
+    like: "small",                    // 最愛的禮物：小的好叼的
     finish: "sweep"                   // 抓完：把紙屑掃成一堆再躺
   },
   grey: {
     name: "架構師", style: "優雅派", desc: "長長的弧線，慢條斯理",
     fur: "#aab3bd", stripe: "#8c96a2", belly: "#eef1f4", ear: "#f2b8c0", accessory: "headset",
-    spacing: 11, speed: 1.25,
+    spacing: 11, speed: 1.25, like: "soft",   // 最愛：軟的
     finish: "lick"                    // 抓完：坐好舔爪子
   },
   white: {
     name: "小弟", style: "亂抓派", desc: "亂抖、打大洞、突然暴衝",
     fur: "#fbfaf7", stripe: "#9a6b4b", belly: "#ffffff", ear: "#9a6b4b", accessory: "cap",
-    spacing: 8, speed: 1.1,
+    spacing: 8, speed: 1.1, like: "toss",     // 最愛：可以打飛的
     finish: "box"                     // 抓完：鑽進紙箱只露尾巴
+  },
+  // 彩蛋：哈士奇（中二戲劇型）。三隻貓都滿 5 顆❤️，或流派收集 18／18 才會出現
+  husky: {
+    name: "哈士奇", style: "戲劇派", desc: "抓破時嗷嗚～，還嫌自己的畫不夠破",
+    fur: "#f4f4f2", stripe: "#3d3d44", belly: "#ffffff", ear: "#3d3d44", accessory: "none",
+    spacing: 13, speed: 1.2, finish: "sit", egg: true
   }
 };
+const MAIN_CATS = ["orange", "grey", "white"];
 
 // 材質：手感、聲音、紙屑都不同。ready = 這一版做好了沒
 // 解鎖一條路往下開（摩卡與貓貓小隊：完成 A 才解鎖 B）：after＝要先解鎖哪一個，條件都是「用上一個材質完成某件事」；聖誕紙箱、衛生紙捲是支線
@@ -79,6 +87,8 @@ const ART = window.NO_ART ? null : {
   orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", tail: "art/orange_tail.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp" },
   grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp", pawOut: "art/grey_paw_out.webp", pawIn: "art/grey_paw_in.webp" },
   white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp", pawOut: "art/white_paw_out.webp", pawIn: "art/white_paw_in.webp" },
+  husky: { sit: "art/husky_sit.webp" },
+  peek: { orange: "art/orange_peek.webp" },
   // 瓦楞紙花紋 B：FLUX 生成的無縫貼圖（花紋 A 是程式畫的），兩種輪流用
   flux: "art/tex_flux.jpg"
 };
@@ -93,37 +103,52 @@ const MAT_ART = window.NO_ART ? {} : {
 // kind：caught 被抓包、treasure 寶物（可以送給貓）、prank 整人卡；rarity：1 普通、2 稀有、3 超稀有
 // sticker：去背貼紙圖（放在暖色底上），其他是滿版場景
 const CARDS = [
-  { id: "wand", kind: "treasure", rarity: 1, sticker: true, name: "逗貓棒", say: "找到逗貓棒！" },
-  { id: "ball", kind: "treasure", rarity: 1, sticker: true, name: "鈴鐺球", say: "找到鈴鐺球和毛線球！" },
-  { id: "kibble", kind: "treasure", rarity: 1, sticker: true, name: "一包飼料", say: "找到一包飼料！" },
-  { id: "fish", kind: "treasure", rarity: 1, sticker: true, name: "魚魚抱枕", say: "找到魚魚抱枕！" },
+  { id: "wand", kind: "treasure", like: "soft", rarity: 1, sticker: true, name: "逗貓棒", say: "找到逗貓棒！" },
+  { id: "ball", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "鈴鐺球", say: "找到鈴鐺球和毛線球！" },
+  { id: "kibble", kind: "treasure", like: "all", rarity: 1, sticker: true, name: "一包飼料", say: "找到一包飼料！" },
+  { id: "fish", kind: "treasure", like: "soft", rarity: 1, sticker: true, name: "魚魚抱枕", say: "找到魚魚抱枕！" },
   { id: "chief_treat", kind: "caught", rarity: 2, name: "總編偷舔肉泥", say: "被抓到了！總編在偷舔肉泥" },
   { id: "kit_kibble", kind: "caught", rarity: 2, name: "小弟頭卡飼料袋", say: "被抓到了！小弟頭卡在飼料袋裡" },
   { id: "arch_cup", kind: "caught", rarity: 2, name: "架構師推杯子", say: "被抓到了！架構師在推杯子" },
   { id: "box_trio", kind: "caught", rarity: 2, name: "紙箱大會", say: "被抓到了！三隻在開紙箱大會" },
-  { id: "cattree", kind: "treasure", rarity: 2, name: "貓跳台", say: "找到貓跳台！" },
+  { id: "cattree", kind: "treasure", like: "all", rarity: 2, name: "貓跳台", say: "找到貓跳台！" },
   { id: "poop", kind: "prank", rarity: 2, name: "是……禮物嗎？", say: "是……禮物嗎？" },
   { id: "fridge", kind: "caught", rarity: 3, name: "半夜偷開冰箱", say: "被抓到了！半夜偷開冰箱" },
-  { id: "catbed", kind: "treasure", rarity: 3, name: "高級貓窩", say: "找到高級貓窩！" }
+  { id: "catbed", kind: "treasure", like: "none", rarity: 3, name: "高級貓窩", say: "找到高級貓窩！" }
 ];
-// 預留的小禮物（摩卡與貓貓小隊 的 Gemini 圖還沒到）：圖到了搬進 CARDS 就會出現；之後也給「叼玩具」「推杯子」共用
-const CARDS_PENDING = [
-  { id: "twine", kind: "treasure", rarity: 1, sticker: true, name: "麻繩", say: "找到一段麻繩！（可以咬一整天）" },
-  { id: "doll", kind: "treasure", rarity: 2, sticker: true, name: "小娃娃", say: "找到小娃娃！（現在是貓的了）" },
-  { id: "pencap", kind: "treasure", rarity: 1, sticker: true, name: "原子筆蓋", say: "找到原子筆蓋！（明天摩卡又要找筆了）" },
-  { id: "bottlecap", kind: "treasure", rarity: 1, sticker: true, name: "寶特瓶蓋", say: "找到寶特瓶蓋！（一撥就滾好遠）" },
-  { id: "scrunchie", kind: "treasure", rarity: 1, sticker: true, name: "髮圈", say: "找到髮圈！（沙發底下還有十個）" },
-  { id: "paperball", kind: "treasure", rarity: 1, sticker: true, name: "紙團", say: "找到紙團！（比玩具還好玩）" },
-  { id: "straw", kind: "treasure", rarity: 1, sticker: true, name: "吸管", say: "找到吸管！" },
-  { id: "lace", kind: "treasure", rarity: 2, sticker: true, name: "鞋帶", say: "找到鞋帶！（摩卡的鞋要散了）" },
-  { id: "tube", kind: "treasure", rarity: 1, sticker: true, name: "衛生紙捲筒", say: "找到衛生紙捲筒！" },
-  { id: "bandball", kind: "treasure", rarity: 2, sticker: true, name: "橡皮筋球", say: "找到橡皮筋球！（彈得超高）" },
-  { id: "button", kind: "treasure", rarity: 2, sticker: true, name: "鈕扣", say: "找到鈕扣！（是哪件衣服的？）" },
-  { id: "capring", kind: "treasure", rarity: 1, sticker: true, name: "瓶蓋環", say: "找到瓶蓋環！（貓界的戒指）" }
+// 小禮物（group: "gift"，收集冊第二頁）：之後也給「叼玩具」「推杯子」共用
+const GIFT_CARDS = [
+  { id: "twine", group: "gift", kind: "treasure", like: "soft", rarity: 1, sticker: true, name: "麻繩", say: "找到一段麻繩！（可以咬一整天）" },
+  { id: "doll", group: "gift", kind: "treasure", like: "soft", rarity: 2, sticker: true, name: "小娃娃", say: "找到小娃娃！（現在是貓的了）" },
+  { id: "pencap", group: "gift", kind: "treasure", like: "small", rarity: 1, sticker: true, name: "原子筆", say: "找到原子筆！（明天摩卡又要找筆了）" },
+  { id: "bottlecap", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "寶特瓶蓋", say: "找到寶特瓶蓋！（一撥就滾好遠）" },
+  { id: "scrunchie", group: "gift", kind: "treasure", like: "soft", rarity: 1, sticker: true, name: "髮圈", say: "找到髮圈！（沙發底下還有十個）" },
+  { id: "paperball", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "紙團", say: "找到紙團！（比玩具還好玩）" },
+  { id: "straw", group: "gift", kind: "treasure", like: "small", rarity: 1, sticker: true, name: "吸管", say: "找到吸管！" },
+  { id: "lace", group: "gift", kind: "treasure", like: "small", rarity: 2, sticker: true, name: "鞋帶", say: "找到鞋帶！（摩卡的鞋要散了）" },
+  { id: "tube", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "衛生紙捲筒", say: "找到衛生紙捲筒！" },
+  { id: "bandball", group: "gift", kind: "treasure", like: "toss", rarity: 2, sticker: true, name: "橡皮筋球", say: "找到橡皮筋球！（彈得超高）" },
+  { id: "button", group: "gift", kind: "treasure", like: "small", rarity: 2, sticker: true, name: "鈕扣", say: "找到鈕扣！（是哪件衣服的？）" },
+  { id: "capring", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "瓶蓋環", say: "找到瓶蓋環！（貓界的戒指）" }
 ];
+const PIC_CARDS = CARDS.slice();          // 驚喜插畫 12 張（全收集獎勵只算這些）
+CARDS.push(...GIFT_CARDS);
 const REWARD = { id: "kiss", name: "全收集親親合照" };
 const RARITY = { 1: { name: "普通", stars: "★", weight: 60, color: "#a9e5c6" }, 2: { name: "稀有", stars: "★★", weight: 30, color: "#aed5ff" }, 3: { name: "超稀有", stars: "★★★", weight: 10, color: "#ffd96a" } };
 const cardImg = id => ART ? `art/cards/${id}.webp` : null;
+
+// 好感度：只會越來越愛。內部點數，玩家只看到愛心；前面超快、後面慢慢來
+const HEART_AT = [3, 8, 18, 45, 90];
+const LOVE = { paint: 3, found: 1, gift: 6, all: 10, fav: 12, none: 1 };
+const HEART_TEXT = ["", "會在首頁對你眨眼了", "抓畫的時候會跑來蹭你", "學會招牌舞步了", "會睡在「開始抓」旁邊", "送你一份回禮！"];
+// ❤️5 回禮卡
+const GIFT_BACK = {
+  orange: { id: "gift_orange", name: "總編的眼鏡布", say: "總編把擦眼鏡的布送給你了（上面還有一根橘毛）" },
+  grey: { id: "gift_grey", name: "架構師的耳麥", say: "架構師把耳麥借你戴，說可以聽到呼嚕聲" },
+  white: { id: "gift_white", name: "小弟的黃帽", say: "小弟把最愛的黃帽送你了（帽沿有咬過的痕跡）" }
+};
+// 送到最愛的禮物：專屬反應
+const FAV_LINE = { orange: "總編叼走{0}，收進紙箱排得整整齊齊", grey: "架構師抱著{0}蹭臉，捨不得放", white: "小弟把{0}打飛又追回來，再打飛！" };
 
 // 背景音樂（摩卡與貓貓小隊 用 Gemini 做的 AI 音樂）：一般用慵懶的 Sunbeams，小弟和泡泡紙用輕快的 Zoomies
 const MUSIC = { calm: "audio/sunbeams.mp3", busy: "audio/zoomies.mp3", zoomies: "audio/gallop.mp3" };

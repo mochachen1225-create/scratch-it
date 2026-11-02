@@ -176,5 +176,7 @@ const FX = {
   twang(v = 1) { const f = rand2(220, 300); this.tone(f, 0.16, { type: "triangle", vol: 0.09 * v, to: f * .55 }); },
   // 沙發裂開：「啪嘶」＋棉花「噗」
   tear() { this.burst(0.12, 2600, 700, 0.32); this.tone(150, 0.12, { type: "sine", vol: 0.12, to: 80, at: 0.04 }); },
+  // 哈士奇：「嗷嗚～」
+  howl() { this.tone(330, 0.5, { type: "sawtooth", vol: 0.07, to: 620 }); this.tone(620, 0.7, { type: "sawtooth", vol: 0.07, at: 0.45, to: 420 }); this.tone(660, 0.9, { type: "sine", vol: 0.08, at: 0.1, to: 500 }); },
   vibrate(ms) { if (!this.muted && navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
 };
