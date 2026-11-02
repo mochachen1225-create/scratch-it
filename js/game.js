@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.5.4";
+const VERSION = "0.5.5";
 const CHANGES = [
+  "材質改成一條路解鎖：用瓦楞紙抓 2 張開泡泡紙、用泡泡紙抓 1 張開沙發⋯⋯",
   "泡泡紙的「啵」變得清脆大聲，偶爾有特別大的一顆；架構師換上插畫貓掌",
   "畫名變成 18 種流派，還有策展人短評；作品集可以收集流派",
   "瓦楞紙有兩種花紋輪流出現，首頁可以切換",
@@ -60,9 +61,16 @@ renderMute();
 
 /* ================= 解鎖 ================= */
 const matById = id => MATERIALS.find(m => m.id === id);
+// 每個材質各自的紀錄（解鎖條件「用某個材質完成某件事」要用）；舊存檔沒有就用總數補上瓦楞紙
+if (!save.ms) save.ms = { cardboard: { p: save.paintings, cats: save.cats.slice(), t: save.time } };
+const matStat = id => save.ms[id] || { p: 0, cats: [], t: 0 };
 function unlockState(m) {
   const u = m.unlock; if (!u) return { done: true, frac: 1 };
-  const n = u.n || 1;
+  if (u.after && !save.unlocked.includes(u.after)) return { done: false, frac: 0, blocked: true };
+  const n = u.n || 1, st = u.mat ? matStat(u.mat) : null;
+  if (u.type === "matPaintings") return { done: st.p >= n, frac: st.p / n };
+  if (u.type === "allcatsOn") return { done: st.cats.length >= 3, frac: st.cats.length / 3 };
+  if (u.type === "matTime") return { done: st.t >= n, frac: st.t / n };
   let have = 0;
   if (u.type === "paintings") have = save.paintings;
   else if (u.type === "allcats") return { done: save.cats.length >= 3, frac: save.cats.length / 3 };
@@ -75,7 +83,11 @@ function unlockState(m) {
 }
 // 圖卡下面的「下一個解鎖」：讓人知道再抓一張會有什麼
 function progressText(m) {
-  const u = m.unlock, n = u.n || 1;
+  const u = m.unlock, n = u.n || 1, st = u.mat ? matStat(u.mat) : null;
+  if (u.after && !save.unlocked.includes(u.after)) return T("先解鎖{0}", W(matById(u.after).name));
+  if (u.type === "matPaintings") return `${Math.min(st.p, n)}/${n}`;
+  if (u.type === "allcatsOn") return `${st.cats.length}/3`;
+  if (u.type === "matTime") return T("{0}/{1} 分鐘", Math.floor(st.t / 60), Math.round(n / 60));
   if (u.type === "paintings" || u.type === "paintingsOrDecember") return `${Math.min(save.paintings, n)}/${n}`;
   if (u.type === "allcats") return `${save.cats.length}/3`;
   if (u.type === "time") return T("{0}/{1} 分鐘", Math.floor(save.time / 60), Math.round(n / 60));
@@ -92,6 +104,7 @@ function nextUnlockLine() {
 }
 function unlockText(m) {
   const u = m.unlock; if (!u) return "";
+  if (u.mat) return T(UNLOCK_TEXT[u.type], W(matById(u.mat).name), u.type === "matTime" ? Math.round(u.n / 60) : (u.n || 0).toLocaleString());
   return T(UNLOCK_TEXT[u.type], u.type === "time" ? Math.round(u.n / 60) : (u.n || 0).toLocaleString());
 }
 // 抓完一張畫後檢查：只解鎖這一版做好了的材質
@@ -150,6 +163,8 @@ function renderHome() {
     b.addEventListener("click", () => {
       if (!open) { toast(m.ready ? T("還沒解鎖：{0}", unlockText(m)) : T("這個材質還在做，敬請期待！")); return; }
       save.mat = m.id; persist(); FX.tap(); if (!ART) $("#aiNote").hidden = true;
+// 舊存檔升級：已經達成的條件，打開遊戲就解鎖
+{ const fresh = checkUnlocks(); if (fresh.length) { persist(); setTimeout(() => toast(T("解鎖新材質：{0}！", fresh.map(m => W(m.name)).join("、")), 3000), 600); } }
 renderHome();
     });
     mats.appendChild(b);
@@ -1010,6 +1025,8 @@ function finish() {
   save.paintings++; save.no++;
   save.time += Math.round(G.scratchMs / 1000);
   if (!save.cats.includes(G.catId)) save.cats.push(G.catId);
+  const ms = save.ms[G.m.id] || (save.ms[G.m.id] = { p: 0, cats: [], t: 0 });
+  ms.p++; ms.t += Math.round(G.scratchMs / 1000); if (!ms.cats.includes(G.catId)) ms.cats.push(G.catId);
   const record = save.paintings > 2 && G.holes > save.maxHoles;
   save.maxHoles = Math.max(save.maxHoles, G.holes);
   save.totalHoles += G.holes;
@@ -1255,4 +1272,6 @@ function openAlbum() {
 $("#viewerClose").addEventListener("click", () => { $("#viewer").hidden = true; });
 
 if (!ART) $("#aiNote").hidden = true;
+// 舊存檔升級：已經達成的條件，打開遊戲就解鎖
+{ const fresh = checkUnlocks(); if (fresh.length) { persist(); setTimeout(() => toast(T("解鎖新材質：{0}！", fresh.map(m => W(m.name)).join("、")), 3000), 600); } }
 renderHome();

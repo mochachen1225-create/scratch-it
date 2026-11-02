@@ -23,26 +23,31 @@ const CATS = {
 };
 
 // 材質：手感、聲音、紙屑都不同。ready = 這一版做好了沒
+// 解鎖一條路往下開（Katie：完成 A 才解鎖 B）：after＝要先解鎖哪一個，條件都是「用上一個材質完成某件事」；聖誕紙箱、衛生紙捲是支線
 const MATERIALS = [
   { id: "cardboard", name: "瓦楞紙貓抓板", icon: "📦", ready: true, unlock: null,
     base: "#d9b483", base2: "#c79d66", groove: "#8a6236", fuzz: "#fbeed2", hole: "#4a2f17",
     under: "#a8773f", stamp: "#9b5a3c", mode: "strip", debris: "strip", sound: { type: "bandpass", freq: 2600, q: 1.1, crackle: 0.5, gain: 0.5 } },
-  { id: "sofa", name: "沙發", icon: "🛋️", ready: true, unlock: { type: "paintings", n: 3 },
-    base: "#5f9e96", base2: "#4f8a83", groove: "#3f6f69", fuzz: "#e9f3f1", hole: "#fff7ea",
-    under: "#fff7ea", stamp: "#ffc7d4", mode: "hex", tough: true, ease: 2, debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
   // 泡泡紙：一格格小泡泡，抓過去連續啵啵啵
-  { id: "bubble", name: "泡泡紙", icon: "🫧", ready: true, unlock: { type: "totalHoles", n: 5000 },
+  { id: "bubble", name: "泡泡紙", icon: "🫧", ready: true, unlock: { after: "cardboard", type: "matPaintings", mat: "cardboard", n: 2 },
     base: "#d9ecf7", base2: "#bcd9ec", groove: "#a9cbe0", fuzz: "#ffffff", hole: "#eef7fc", under: "#eef7fc", stamp: "#f39bb0",
     mode: "bubble", debris: "plastic", sound: { type: "highpass", freq: 1800, q: 0.7, crackle: 0, gain: 0.3 } },
-  { id: "castle", name: "紙箱城堡", icon: "🏰", ready: false, unlock: { type: "allcats" } },
-  { id: "rug", name: "長毛地毯", icon: "🧶", ready: false, unlock: { type: "time", n: 300 } },
-  { id: "curtain", name: "窗簾", icon: "🪟", ready: false, unlock: { type: "holes", n: 1500 } },
+  { id: "sofa", name: "沙發", icon: "🛋️", ready: true, unlock: { after: "bubble", type: "matPaintings", mat: "bubble", n: 1 },
+    base: "#5f9e96", base2: "#4f8a83", groove: "#3f6f69", fuzz: "#e9f3f1", hole: "#fff7ea",
+    under: "#fff7ea", stamp: "#ffc7d4", mode: "hex", tough: true, ease: 2, debris: "fluff", sound: { type: "lowpass", freq: 1100, q: 0.7, crackle: 0, gain: 0.7 } },
+  { id: "castle", name: "紙箱城堡", icon: "🏰", ready: false, unlock: { after: "sofa", type: "allcatsOn", mat: "sofa" } },
+  { id: "curtain", name: "窗簾", icon: "🪟", ready: false, unlock: { after: "castle", type: "matPaintings", mat: "castle", n: 3 } },
+  { id: "rug", name: "長毛地毯", icon: "🧶", ready: false, unlock: { after: "curtain", type: "matTime", mat: "curtain", n: 300 } },
   { id: "tissue", name: "衛生紙捲", icon: "🧻", ready: false, unlock: { type: "frenzy", n: 10 }, secret: true },
   { id: "xmas", name: "聖誕禮物紙箱", icon: "🎁", ready: false, unlock: { type: "paintingsOrDecember", n: 10 } }
 ];
 
 // 解鎖條件的說明文字（{0} 是數字）
 const UNLOCK_TEXT = {
+  matPaintings: "用{0}抓完 {1} 張",
+  allcatsOn: "三隻貓都用{0}抓過",
+  matTime: "用{0}累積抓滿 {1} 分鐘",
+  after: "先解鎖{0}",
   paintings: "抓完 {0} 張畫",
   allcats: "三隻貓都各抓過一次",
   time: "累積抓滿 {0} 分鐘",
