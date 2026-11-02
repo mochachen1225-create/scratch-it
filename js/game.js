@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.5.3";
+const VERSION = "0.5.4";
 const CHANGES = [
+  "泡泡紙的「啵」變得清脆大聲，偶爾有特別大的一顆；架構師換上插畫貓掌",
   "畫名變成 18 種流派，還有策展人短評；作品集可以收集流派",
   "瓦楞紙有兩種花紋輪流出現，首頁可以切換",
   "沙發變得很難抓破：要重複抓，先起皺、勾出線頭、扯開縫，最後「啪」裂開露出棉花（感謝玩家回報）",
@@ -285,6 +286,8 @@ function startGame() {
   G.track = G.catId === "white" || m.id === "bubble" ? "busy" : "calm";
   FX.music(G.track);
   cv.style.transform = "";
+  // 第一次玩泡泡紙：提醒開聲音
+  if (m.id === "bubble" && !save.soundHint) { save.soundHint = 1; persist(); setTimeout(() => toast(FX.muted ? T("開聲音更好玩 🔊（右上角）") : T("開聲音更好玩 🔊 iPhone 記得關掉側邊靜音鍵"), 3500), 400); }
   cancelAnimationFrame(raf); last = performance.now(); raf = requestAnimationFrame(loop);
 }
 $("#quitBtn").addEventListener("click", () => { FX.tap(); endPlay(); show("home"); renderHome(); });
@@ -628,7 +631,13 @@ function popNear(x, y) {
       for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + rand(-.3, .3), rr = q.r * rand(.3, .85); c[i ? "lineTo" : "moveTo"](q.x + Math.cos(a) * rr, q.y + Math.sin(a) * rr); }
       c.closePath(); c.stroke();
       track2(q.x, q.y);
-      FX.popSmall(); FX.vibrate(6);
+      G.popSeq = (G.popSeq || 0) + 1;
+      if (Math.random() < .05 && performance.now() - (G.lastBigPop || 0) > 2500) {
+        G.lastBigPop = performance.now();
+        // 驚喜：特別大的一顆
+        FX.bigPop(); FX.vibrate(35);
+        if (performance.now() - (G.lastBig || 0) > 1500) { G.lastBig = performance.now(); bubble(T("啪！"), q.x, q.y - 50); }
+      } else { FX.bubblePop(G.catId, G.popSeq); FX.vibrate(6); }
       for (let i = 0; i < 2; i++) spawnDebris(q.x, q.y, rand(-1, 1), -1);
     }
   }
@@ -763,6 +772,7 @@ cv.addEventListener("pointerdown", e => {
   G.paw.x = e.clientX; G.paw.y = e.clientY;
   G.stroke = { ax: e.clientX, ay: e.clientY, sx: e.clientX, sy: e.clientY, dir: null, path: 0 };
   G.press = { x: e.clientX, y: e.clientY, t: performance.now(), n: 0, next: 0 };
+  G.popSeq = 0;   // 總編：每一筆從低音開始，沿著一排越啵越高
   G.lastT = performance.now();
   setPaw(true); $("#paw").style.opacity = 1; movePaw();
   $("#hint").style.opacity = 0;

@@ -25,6 +25,8 @@ const FX = {
       this.noiseBuf = buf;
     }
     if (this.ctx.state === "suspended") this.ctx.resume();
+    // iPhone 側邊靜音開關打開時 Web Audio 會沒聲音：Safari 16.4 起可以設成「播放」類別，就跟音樂一樣會響
+    try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch {}
   },
   // 開始一局：接好「噪音 → 濾波 → 音量」，音量平常是 0，抓的時候才打開
   start(mat) {
@@ -74,7 +76,32 @@ const FX = {
     this.tone(f, 0.13, { type: "sine", vol: 0.2, to: f / 2.6 }); this.burst(0.09, 2600, 900, 0.25);
   },
   // 泡泡紙的小泡泡
-  popSmall() { const f = 700 + Math.random() * 500; this.tone(f, 0.05, { type: "triangle", vol: 0.12, to: f / 3 }); this.click(0.08); },
+  popSmall() { this.bubblePop(); },
+  // 泡泡紙的「啵」：很短的高頻塑膠爆裂聲＋低音「噗」當身體；每顆音高音色隨機一點
+  // 同一瞬間最多 4 聲（不會糊成一團）；cat 決定個性：小弟亂、架構師一顆一顆飽滿、總編沿著一排音越來越高
+  popTimes: [],
+  bubblePop(cat = "orange", seq = 0) {
+    if (this.muted || !this.ctx) return;
+    const now = this.ctx.currentTime; this.popTimes = this.popTimes.filter(t => now - t < 0.05);
+    if (this.popTimes.length >= 4) return;
+    this.popTimes.push(now);
+    const c = this.ctx, t = now + Math.random() * 0.012;
+    const hi = cat === "orange" ? 3200 * Math.pow(1.03, Math.min(seq, 16)) : cat === "grey" ? rand2(2400, 3200) : rand2(2600, 5200);
+    // 爆裂：高通噪音 15～30 毫秒
+    const src = c.createBufferSource(); src.buffer = this.noiseBuf;
+    const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = hi; f.Q.value = 1.4;
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.75, t + 0.002); g.gain.exponentialRampToValueAtTime(0.001, t + rand2(0.015, 0.03));
+    src.connect(f).connect(g).connect(c.destination); src.start(t, Math.random() * 1.5); src.stop(t + 0.05);
+    // 身體：低音的「噗」
+    const body = cat === "grey" ? rand2(170, 210) : rand2(190, 280);
+    this.tone(body, cat === "grey" ? 0.09 : 0.06, { type: "sine", vol: 0.32, to: body * .45 });
+  },
+  // 偶爾一顆特別大的「啪！」
+  bigPop() {
+    if (this.muted || !this.ctx) return;
+    this.burst(0.09, 1800, 500, 0.9); this.burst(0.03, 6000, 3000, 0.6, "highpass");
+    this.tone(120, 0.16, { type: "sine", vol: 0.45, to: 55 });
+  },
   plop() { this.tone(240, 0.18, { type: "sine", vol: 0.18, to: 90 }); this.burst(0.25, 1200, 300, 0.3); },
   sneeze() { this.tone(900, 0.08, { type: "square", vol: 0.06, to: 1400 }); this.burst(0.35, 2000, 600, 0.45); },
   unlockChime() { [659, 784, 988, 1319].forEach((f, i) => this.tone(f, 0.25, { type: "triangle", vol: 0.13, at: i * 0.1 })); },
