@@ -52,14 +52,21 @@ const UNLOCK_TEXT = {
   paintingsOrDecember: "12 月限定，或抓完 {0} 張畫"
 };
 
-// 爪痕畫的畫名：依抓法自動決定
+// 爪痕畫的畫名：依抓法自動決定（18 種，作品集會收集）＋策展人短評
 const ART_STYLES = {
-  wild: "狂野派",
-  cheese: "瑞士起司派",
-  blank: "留白大師",
-  minimal: "極簡主義",
-  impression: "印象派",
-  chain: "連鎖大師"
+  wild: "狂野派", cheese: "瑞士起司派", blank: "留白大師", minimal: "極簡主義", impression: "印象派", chain: "連鎖大師",
+  fauvism: "野獸派", cubism: "立體派", pointillism: "點描派", action: "行動繪畫", futurism: "未來主義", ukiyoe: "浮世繪",
+  symmetry: "對稱派", wabi: "侘寂", dada: "達達主義", am3: "凌晨三點派", nap: "午睡派", pawpad: "肉球表現主義"
+};
+// 還沒收集到的流派：點一下看提示
+const STYLE_HINTS = {"wild": "抓爛超過四成", "cheese": "讓很多區塊整片碎掉", "blank": "只抓一點點就收手", "minimal": "一筆一筆畫直線（總編以外的貓）", "impression": "沒有特別風格的時候", "chain": "連鎖 7 次以上", "fauvism": "大部分都在暴衝時抓的", "cubism": "橫的、直的、斜的都抓", "pointillism": "很多短短的小筆畫", "action": "又長又亂、整張都抓到", "futurism": "抓得非常快", "ukiyoe": "畫很多長長的弧線", "symmetry": "左右兩半抓得差不多", "wabi": "只抓邊邊角角", "dada": "不到 5 秒就按「抓夠了」", "am3": "半夜 0～5 點抓", "nap": "慢慢抓、抓很久", "pawpad": "很稀有，偶爾才會出現"};
+const STYLE_NOTES = {
+  wild: "整張紙都在尖叫，非常好。", cheese: "洞比紙多，可以拿去配紅酒。", blank: "留白，是給觀眾想像的空間。",
+  minimal: "少即是多，貓也同意。", impression: "遠看很美，近看是貓抓的。", chain: "一個接一個，停不下來。",
+  fauvism: "顏色？沒有。氣勢？滿分。", cubism: "同時從三個角度攻擊紙箱。", pointillism: "一點一點，耐心得令人害怕。",
+  action: "藝術家本人也不知道發生了什麼。", futurism: "速度就是美。", ukiyoe: "一筆一浪，很有東方味。",
+  symmetry: "黃金比例，貓也懂。", wabi: "不完美，才完美。", dada: "這也算？算。",
+  am3: "這個時間，只有貓醒著。", nap: "抓著抓著就睡著了。", pawpad: "評審團一致喵過。"
 };
 
 // AI 插畫（Katie 用 Gemini App 生成）。window.NO_ART = true 時全部改用程式畫的版本
@@ -94,6 +101,21 @@ const CARDS = [
   { id: "poop", kind: "prank", rarity: 2, name: "是……禮物嗎？", say: "是……禮物嗎？" },
   { id: "fridge", kind: "caught", rarity: 3, name: "半夜偷開冰箱", say: "被抓到了！半夜偷開冰箱" },
   { id: "catbed", kind: "treasure", rarity: 3, name: "高級貓窩", say: "找到高級貓窩！" }
+];
+// 預留的小禮物（Katie 的 Gemini 圖還沒到）：圖到了搬進 CARDS 就會出現；之後也給「叼玩具」「推杯子」共用
+const CARDS_PENDING = [
+  { id: "twine", kind: "treasure", rarity: 1, sticker: true, name: "麻繩", say: "找到一段麻繩！（可以咬一整天）" },
+  { id: "doll", kind: "treasure", rarity: 2, sticker: true, name: "小娃娃", say: "找到小娃娃！（現在是貓的了）" },
+  { id: "pencap", kind: "treasure", rarity: 1, sticker: true, name: "原子筆蓋", say: "找到原子筆蓋！（明天摩卡又要找筆了）" },
+  { id: "bottlecap", kind: "treasure", rarity: 1, sticker: true, name: "寶特瓶蓋", say: "找到寶特瓶蓋！（一撥就滾好遠）" },
+  { id: "scrunchie", kind: "treasure", rarity: 1, sticker: true, name: "髮圈", say: "找到髮圈！（沙發底下還有十個）" },
+  { id: "paperball", kind: "treasure", rarity: 1, sticker: true, name: "紙團", say: "找到紙團！（比玩具還好玩）" },
+  { id: "straw", kind: "treasure", rarity: 1, sticker: true, name: "吸管", say: "找到吸管！" },
+  { id: "lace", kind: "treasure", rarity: 2, sticker: true, name: "鞋帶", say: "找到鞋帶！（摩卡的鞋要散了）" },
+  { id: "tube", kind: "treasure", rarity: 1, sticker: true, name: "衛生紙捲筒", say: "找到衛生紙捲筒！" },
+  { id: "bandball", kind: "treasure", rarity: 2, sticker: true, name: "橡皮筋球", say: "找到橡皮筋球！（彈得超高）" },
+  { id: "button", kind: "treasure", rarity: 2, sticker: true, name: "鈕扣", say: "找到鈕扣！（是哪件衣服的？）" },
+  { id: "capring", kind: "treasure", rarity: 1, sticker: true, name: "瓶蓋環", say: "找到瓶蓋環！（貓界的戒指）" }
 ];
 const REWARD = { id: "kiss", name: "全收集親親合照" };
 const RARITY = { 1: { name: "普通", stars: "★", weight: 60, color: "#a9e5c6" }, 2: { name: "稀有", stars: "★★", weight: 30, color: "#aed5ff" }, 3: { name: "超稀有", stars: "★★★", weight: 10, color: "#ffd96a" } };

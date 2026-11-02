@@ -124,6 +124,9 @@
   .slot.reward { width: 100%; background: linear-gradient(135deg, #ffd96a, #ffb8c6); flex-direction: row; padding: 8px; }
   .slot.reward img { width: 96px; } .slot.reward span { font-size: 16px; font-weight: 700; flex: 1; }
   .slot.reward.unk i { position: static; font-size: 28px; color: inherit; text-shadow: none; }
+  .styles { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+  .styles .chip { font-size: 13px; padding: 3px 9px; background: #efe6d8; color: var(--muted); box-shadow: none; border-width: 2px; }
+  .styles .chip.on { background: var(--yellow); color: var(--ink); }
   .bag { display: flex; flex-direction: column; gap: 8px; width: 100%; }
   .bagitem { display: flex; align-items: center; gap: 10px; background: var(--sheet); border: 2.5px solid var(--ink); border-radius: 14px; padding: 6px 10px; box-shadow: 2px 2px 0 var(--ink); }
   .bagitem img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
@@ -213,6 +216,8 @@
   <p class="small" data-t>最近 12 張抓痕畫，只存在這支手機裡</p>
   <div id="album" class="album"></div>
   <p id="albumEmpty" class="small" data-t>還沒有作品，快去抓一張！</p>
+  <div id="stylesTitle" class="label"></div>
+  <div id="styles" class="styles"></div>
   <button id="albumBack" class="btn btn-ghost" data-t>← 回首頁</button>
 </section>
 
@@ -234,11 +239,11 @@
 <div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.5.2"></script>
-<script src="js/i18n.en.js?v=0.5.2"></script>
-<script src="js/data.js?v=0.5.2"></script>
-<script src="js/cats.js?v=0.5.2"></script>
-<script src="js/fx.js?v=0.5.2"></script>
-<script src="js/game.js?v=0.5.2"></script>
+<script src="js/i18n.js?v=0.5.3"></script>
+<script src="js/i18n.en.js?v=0.5.3"></script>
+<script src="js/data.js?v=0.5.3"></script>
+<script src="js/cats.js?v=0.5.3"></script>
+<script src="js/fx.js?v=0.5.3"></script>
+<script src="js/game.js?v=0.5.3"></script>
 </body>
 </html>

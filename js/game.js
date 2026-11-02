@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.5.2";
+const VERSION = "0.5.3";
 const CHANGES = [
+  "畫名變成 18 種流派，還有策展人短評；作品集可以收集流派",
   "瓦楞紙有兩種花紋輪流出現，首頁可以切換",
   "沙發變得很難抓破：要重複抓，先起皺、勾出線頭、扯開縫，最後「啪」裂開露出棉花（感謝玩家回報）",
   "瓦楞紙改成沿著紙條扒開的長條抓痕（感謝玩家回報）",
@@ -287,7 +288,7 @@ function startGame() {
   cancelAnimationFrame(raf); last = performance.now(); raf = requestAnimationFrame(loop);
 }
 $("#quitBtn").addEventListener("click", () => { FX.tap(); endPlay(); show("home"); renderHome(); });
-$("#doneBtn").addEventListener("click", () => { if (G && !G.done) finish(); });
+$("#doneBtn").addEventListener("click", () => { if (G && !G.done) { G.pressedDone = true; finish(); } });
 function endPlay() { cancelAnimationFrame(raf); FX.stop(); cv.style.transform = ""; document.body.classList.remove("zoomies"); $("#paw2").hidden = true; G = null; }
 
 /* ================= 抓：爪痕＋密密麻麻的小洞 ================= */
@@ -455,6 +456,13 @@ function setupBubbles() {
     }
   G.bub = { r, gap, list, grid, rowLeft, rowTot, rowDone, total: list.length };
 }
+// 畫名用的統計：洞在左／右半邊、在邊邊、暴衝時打的
+function holeAt(x, y) {
+  const st = G.st || (G.st = { l: 0, r: 0, edge: 0, zoom: 0 });
+  if (x < Wd / 2) st.l++; else st.r++;
+  if (x < Wd * .15 || x > Wd * .85 || y < Ht * .15 || y > Ht * .85) st.edge++;
+  if (G.zoom === 1) st.zoom++;
+}
 function track2(x, y) { G.minX = Math.min(G.minX, x); G.maxX = Math.max(G.maxX, x); G.minY = Math.min(G.minY, y); G.maxY = Math.max(G.maxY, y); }
 function punchAt(x, y) {
   const j = Math.round((y - Y0) / ROWH), i = Math.round((x - (OFF && j % 2 ? HEX / 2 : 0)) / HEX);
@@ -469,7 +477,7 @@ function punchCell(i, j) {
   const p = patchOf(i, j); if (h.pDone[p]) return false;
   const [cx, cy] = hexPos(i, j), c = dctx, m = G.m;
   if (m.tough && !toughHit(h, k, cx, cy)) return false;
-  h.punched[k] = 1; G.holes++; h.pHit[p]++;
+  h.punched[k] = 1; G.holes++; h.pHit[p]++; holeAt(cx, cy);
   if (m.tough && inPicRect(cx, cy)) { G.picRip = (G.picRip || 0) + 1; checkReveal(); }
   if (m.mode === "strip") {
     // 長條抓痕：紙條表面被刮開，露出深色的縫，上下是翹起來的淺色毛邊；相鄰的格子連成一長條
@@ -551,7 +559,7 @@ function burstPatch(p, chain) {
   const cells = [];
   for (let j = pj * PATCH; j < Math.min(h.rows, (pj + 1) * PATCH); j++) for (let i = pi * PX; i < Math.min(h.cols, (pi + 1) * PX); i++) {
     const k = j * h.cols + i; if (h.punched[k] === 2) continue;
-    if (!h.punched[k]) { h.punched[k] = 1; G.holes++; }
+    if (!h.punched[k]) { h.punched[k] = 1; G.holes++; const [hx, hy] = hexPos(i, j); holeAt(hx, hy); }
     cells.push(hexPos(i, j));
   }
   if (!cells.length) return;
@@ -602,7 +610,7 @@ function popNear(x, y) {
     for (const id of ids) {
       const q = b.list[id];
       if (q.popped || Math.hypot(q.x - x, q.y - y) > q.r * .95) continue;
-      q.popped = true; G.holes++;
+      q.popped = true; G.holes++; holeAt(q.x, q.y);
       // 一排啵了八成：剩下的從左到右一路啵過去
       if (--b.rowLeft[q.j] <= b.rowTot[q.j] * .2 && !b.rowDone[q.j]) {
         b.rowDone[q.j] = 1;
@@ -753,7 +761,7 @@ cv.addEventListener("pointerdown", e => {
   G.pid = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch {}
   G.down = true; G.fx = e.clientX; G.fy = e.clientY; G.lx = e.clientX; G.ly = e.clientY;
   G.paw.x = e.clientX; G.paw.y = e.clientY;
-  G.stroke = { ax: e.clientX, ay: e.clientY, dir: null, path: 0 };
+  G.stroke = { ax: e.clientX, ay: e.clientY, sx: e.clientX, sy: e.clientY, dir: null, path: 0 };
   G.press = { x: e.clientX, y: e.clientY, t: performance.now(), n: 0, next: 0 };
   G.lastT = performance.now();
   setPaw(true); $("#paw").style.opacity = 1; movePaw();
@@ -767,7 +775,12 @@ cv.addEventListener("pointermove", e => {
 const lift = e => {
   if (!G || e.pointerId !== G.pid) return;
   const s = G.stroke;
-  if (s && s.path > 5) G.strokes.push({ path: s.path, straight: Math.min(1, Math.hypot(G.paw.x - s.ax, G.paw.y - s.ay) / s.path) * (G.catId === "orange" ? 0 : 1) + (G.catId === "orange" ? 1 : 0) });
+  if (s && s.path > 5) {
+    const dx = G.paw.x - s.sx, dy = G.paw.y - s.sy, d = Math.hypot(dx, dy);
+    G.strokes.push({ path: s.path, straight: Math.min(1, Math.hypot(G.paw.x - s.ax, G.paw.y - s.ay) / s.path) * (G.catId === "orange" ? 0 : 1) + (G.catId === "orange" ? 1 : 0),
+      bend: Math.min(1, d / s.path),   // 起點到終點的距離÷路徑長：越小越彎
+      dir: d > 10 ? Math.round(((Math.atan2(dy, dx) + Math.PI) % Math.PI) / (Math.PI / 4)) % 4 : -1 });
+  }
   G.pid = null; G.down = false; G.stroke = null; G.press = null; FX.quiet();
   setPaw(false); $("#paw").style.opacity = .85;
 };
@@ -938,17 +951,40 @@ function endZoomies() {
 
 /* ================= 抓完 ================= */
 function coverage() { return G.holes / ((G.hx || G.bub).total || 1); }
-function artStyle() {
-  const cov = coverage();
-  const tot = G.strokes.reduce((s, x) => s + x.path, 0) || 1;
-  const straight = G.strokes.reduce((s, x) => s + x.path * x.straight, 0) / tot;
+// 畫名：依抓法自動決定（18 種流派，作品集會收集）。符合的照順序挑第一個；都不符合就從普通的流派裡隨機（貓的個性會偏向某幾種）
+const STYLE_FALLBACK = { orange: ["minimal", "symmetry"], grey: ["ukiyoe", "pointillism"], white: ["fauvism", "action"] };
+function artStyle(sec, done) {
+  const cov = coverage(), S = G.strokes, n = S.length || 1;
+  const tot = S.reduce((s, x) => s + x.path, 0) || 1;
+  const straight = S.reduce((s, x) => s + x.path * x.straight, 0) / tot;
   const patches = G.hx ? G.hx.pTotal.filter(Boolean).length : 1;
+  const st = G.st || { l: 0, r: 0, edge: 0, zoom: 0 }, holes = G.holes || 1;
+  const speed = tot / Math.max(1, G.scratchMs);                 // px／ms
+  const dirs = [0, 0, 0, 0]; for (const x of S) if (x.dir >= 0) dirs[x.dir] += x.path;
+  const manyDirs = dirs.filter(v => v > tot * .15).length >= 3;
+  const longS = S.filter(x => x.path > 120), curvy = longS.filter(x => x.bend < .6 && x.bend > .15).reduce((s, x) => s + x.path, 0);
+  const avg = tot / n, spread = (G.maxX - G.minX) * (G.maxY - G.minY) / (Wd * Ht);
+  const hour = new Date().getHours();
+  if (done && sec < 5) return "dada";
+  if (hour < 5 && Math.random() < .4) return "am3";   // 半夜不要每張都是同一個畫名
+  if (Math.random() < .03 || (G.hearts && G.zoom && G.rows >= 2)) return "pawpad";
   if ((G.bestChain || 0) >= 7) return "chain";
+  if (st.zoom / holes > .6) return "fauvism";
+  if (sec > 90 && speed < .5) return "nap";
   if (G.hx && G.bursts / patches > .4) return "cheese";
-  if (straight > .85) return "minimal";
+  if (cov > .08 && cov < .3 && st.edge / holes > .8) return "wabi";
+  if (cov > .15 && Math.abs(st.l - st.r) / holes < .06) return "symmetry";
+  if (straight > .85 && G.catId !== "orange") return "minimal";
+  if (manyDirs && n >= 8) return "cubism";
+  if (longS.length >= 4 && curvy / tot > .45) return "ukiyoe";
+  if (n >= 25 && avg < 45) return "pointillism";
+  if (avg > 250 && straight < .5 && spread > .6) return "action";
+  if (speed > 1.6) return "futurism";
   if (cov < .15) return "blank";
   if (cov > .42) return "wild";
-  return "impression";
+  // 都不符合：一半機率挑這隻貓偏愛的，一半從普通的裡挑
+  const pool = Math.random() < .5 ? STYLE_FALLBACK[G.catId] : ["impression", "impression", "cubism", "pointillism", "wild"];
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 function finish() {
   G.done = true; G.down = false; G.pid = null; FX.quiet();
@@ -967,7 +1003,7 @@ function finish() {
   const record = save.paintings > 2 && G.holes > save.maxHoles;
   save.maxHoles = Math.max(save.maxHoles, G.holes);
   save.totalHoles += G.holes;
-  const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(), no: save.no, holes: G.holes, chain: G.bestChain || 0, zoom: G.zoom ? 1 : 0, rows: G.rows, stamps: G.stamps,
+  const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(sec, !!G.pressedDone), no: save.no, holes: G.holes, chain: G.bestChain || 0, zoom: G.zoom ? 1 : 0, rows: G.rows, stamps: G.stamps,
     card: G.card ? G.card.id : null, found: G.found };
   // 刮刮卡：找到就收進收集冊，寶物放進寶物袋
   let firstFind = false, complete = false;
@@ -978,6 +1014,7 @@ function finish() {
     if (!save.reward && CARDS.every(cd => save.found[cd.id])) { save.reward = true; complete = true; }
   }
   const fresh = checkUnlocks();
+  save.styles = save.styles || {}; info.newStyle = !save.styles[info.style]; save.styles[info.style] = (save.styles[info.style] || 0) + 1;
   G.rainBand = Ht * .3; G.rainUntil = performance.now() + 1100;
   setTimeout(diveIn, 1100);
   setTimeout(async () => {
@@ -997,6 +1034,7 @@ function finish() {
     if (complete) dance(T("全收集！")).then(() => showCard(REWARD, true));
     else if (fresh.length) dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
     else if (record) dance(T("新紀錄！一張抓了 {0} 下", info.holes.toLocaleString()));
+    else if (info.newStyle && save.paintings > 1) toast(T("🎨 新流派：{0}！作品集 {1}／{2}", W(ART_STYLES[info.style]), Object.keys(save.styles).length, Object.keys(ART_STYLES).length), 3000);
     else if (info.card && !info.found) toast(T("差一點就找到了！下面藏著一張{0}卡 {1}", T(RARITY[CARDS.find(cd => cd.id === info.card).rarity].name), RARITY[CARDS.find(cd => cd.id === info.card).rarity].stars), 3200);
     else if (firstFind && info.card && CARDS.find(cd => cd.id === info.card).kind === "treasure") toast(T("🎁 寶物放進寶物袋了，可以到收集冊送給貓咪"), 3200);
   }, 3300);
@@ -1144,6 +1182,13 @@ async function buildCard(info) {
   x.drawImage(comp, sx * DPR, sy * DPR, cw * DPR, ch * DPR, fx, fy, fw, fh);
   x.restore();
   x.lineWidth = 8; x.strokeStyle = "#3a2e2a"; roundRect(x, fx, fy, fw, fh, 28); x.stroke();
+  // 策展人短評：像美術館的小牌子，貼在畫框右下角
+  {
+    const F2 = n => `${n}px Huninn, "PingFang TC", "Noto Sans TC", sans-serif`, txt = T(STYLE_NOTES[info.style]);
+    x.font = F2(30); const w = Math.min(860, x.measureText(txt).width + 56), bx = fx + fw - w - 24, by = fy + fh - 86;
+    x.fillStyle = "rgba(255,250,242,.94)"; roundRect(x, bx, by, w, 62, 14); x.fill(); x.lineWidth = 3; x.strokeStyle = "#3a2e2a"; x.stroke();
+    x.fillStyle = "#3a2e2a"; x.textAlign = "left"; x.fillText(txt, bx + 28, by + 42, w - 56);
+  }
   // 文字
   const cat = CATS[info.cat];
   const title = LANG === "en" ? `“${W(ART_STYLES[info.style])} No.${info.no}”` : `《${W(ART_STYLES[info.style])} No.${info.no}》`;
@@ -1187,6 +1232,14 @@ function openAlbum() {
     box.appendChild(im);
   });
   $("#albumEmpty").hidden = save.album.length > 0;
+  // 收集到的流派
+  const got = save.styles || {}, keys = Object.keys(ART_STYLES);
+  $("#stylesTitle").textContent = T("🎨 收集到的流派 {0}／{1}", keys.filter(k => got[k]).length, keys.length);
+  $("#styles").innerHTML = keys.map(k => `<button class="chip${got[k] ? " on" : ""}" data-k="${k}">${got[k] ? W(ART_STYLES[k]) : "？？？"}</button>`).join("");
+  $("#styles").onclick = e => {
+    const b = e.target.closest(".chip"); if (!b) return; const k = b.dataset.k; FX.tap();
+    toast(got[k] ? `${W(ART_STYLES[k])}：${T(STYLE_NOTES[k])}` : T("提示：{0}", T(STYLE_HINTS[k])), 3000);
+  };
   show("albumScreen");
 }
 $("#viewerClose").addEventListener("click", () => { $("#viewer").hidden = true; });
