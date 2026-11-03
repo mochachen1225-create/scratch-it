@@ -16,14 +16,14 @@ const CATS = {
     finish: "lick"                    // 抓完：坐好舔爪子
   },
   white: {
-    name: "小弟", style: "亂抓派", desc: "亂抖、打大洞、突然暴衝",
+    name: "小弟", style: "亂抓派", desc: "細碎亂抓、到處都是小爪痕",
     fur: "#fbfaf7", stripe: "#9a6b4b", belly: "#ffffff", ear: "#9a6b4b", accessory: "cap",
     spacing: 8, speed: 1.1, like: "toss",     // 最愛：可以打飛的
     finish: "box"                     // 抓完：鑽進紙箱只露尾巴
   },
   // 彩蛋：哈士奇（拆家搞笑擔當，帶一點中二）。三隻貓都滿 5 顆❤️，或流派收集 18／18 才會出現
   husky: {
-    name: "哈士奇", style: "拆家派", desc: "抓得比貓還兇，拆完自己嚇一跳",
+    name: "哈士奇", style: "拆家派", desc: "一爪撕下一大片，拆完自己嚇一跳",
     fur: "#f4f4f2", stripe: "#3d3d44", belly: "#ffffff", ear: "#3d3d44", accessory: "none",
     spacing: 13, speed: 1.2, finish: "sit", egg: true
   }

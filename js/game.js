@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.2";
+const VERSION = "0.8.3";
 const CHANGES = [
+  "小弟和哈士奇手感拉開：小弟細碎亂抓、哈士奇一爪撕下一大片（感謝玩家回報）",
   "鞋帶會先用前爪拉開、扯長再咬；總編的爪痕整齊但比較自然，歪了會補一筆（感謝玩家回報）",
   "鞋帶和逗貓棒：貓會扭屁股撲上去咬住、甩頭拖走；髮圈改成拍飛追著玩（感謝玩家回報）",
   "抓到一半貓會分心：追飛出去的碎片、聽到腳步聲裝沒事",
@@ -590,6 +591,26 @@ function toughHit(h, k, cx, cy) {
   }
   return false;
 }
+function huskyRip(x, y) {
+  if (performance.now() < G.freezeUntil) return;
+  shake(5, 260); FX.tear(); FX.rip(); FX.vibrate([30, 20, 50]);
+  if (G.m.mode === "bubble") { for (let a = 0; a < 6.3; a += .35) for (let rr = 0; rr <= 46; rr += 8) popNear(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  else {
+    const h = G.hx, j = Math.round((y - Y0) / ROWH), i = Math.round((x - (OFF && j % 2 ? HEX / 2 : 0)) / HEX);
+    if (i >= 0 && j >= 0 && i < h.cols && j < h.rows) {
+      const p = patchOf(i, j);
+      if (h.pTotal[p] && !h.pDone[p]) burstPatch(p, 0);
+      // 連帶旁邊整片翻起來
+      neighbors(p).filter(q => h.pTotal[q] && !h.pDone[q]).slice(0, 1).forEach((q, n) => setTimeout(() => G && !G.done && burstPatch(q, n + 1), 70 + n * 70));
+    }
+  }
+  for (let k = 0; k < 14; k++) { spawnDebris(x + rand(-30, 30), y + rand(-30, 30), rand(-1, 1), -1, false, 2.4); }
+  if (Math.random() < .3 && performance.now() - (G.lastHowl || 0) > 3500) {
+    G.lastHowl = performance.now();
+    const line = Math.random() < .6 ? T("嗷嗚～拆！") : T("……剛剛是我嗎？");
+    if (line === T("嗷嗚～拆！")) FX.howl(); bubble(line, x - 40, y - 80);
+  }
+}
 function punchArea(x, y, r) {
   // 小弟的大爪：一爪打穿一整圈（泡泡紙就是一次壓破一圈泡泡）
   if (G.m.mode === "bubble") { for (let a = 0; a < 6.3; a += .5) for (let rr = 0; rr <= r; rr += 6) popNear(x + Math.cos(a) * rr, y + Math.sin(a) * rr); FX.vibrate(25); return; }
@@ -721,7 +742,7 @@ function claw(x0, y0, x1, y1, power = 1) {
       for (const o of lanes) { const qx = px + nx * o, qy = py + ny * o; if (m.mode === "bubble") popNear(qx, qy); else punchAt(qx, qy); }
     }
   }
-  const n = len / 16 * (G.catId === "white" ? 1.7 : G.catId === "grey" ? .7 : 1) * (z ? 3 : 1);
+  const n = len / 16 * (G.catId === "white" ? 2.4 : G.catId === "grey" ? .7 : 1) * (z ? 3 : 1);
   for (let i = 0; i < n; i++) if (Math.random() < n - i) spawnDebris(x0 + dx * Math.random(), y0 + dy * Math.random(), nx, ny);
   G.moved += len;
   if (G.moved > 50) { G.moved = 0; FX.vibrate(5); }
@@ -734,13 +755,13 @@ function spring(x, y) {
   bubble(T("蹦！"), x, y - 40);
 }
 // 碎片往手指移動的方向噴（rain＝抓完的紙屑雨，不跟手指）
-function spawnDebris(x, y, nx, ny, rain) {
+function spawnDebris(x, y, nx, ny, rain, big) {
   if (G.particles.length > 1500) return;
   const m = G.m, side = Math.random() < .5 ? -1 : 1, sp = rand(60, 220), push = rain ? 0 : rand(120, 320);
   const fluff = m.debris === "fluff", plastic = m.debris === "plastic";
   G.particles.push({
     x, y, vx: nx * side * sp * .6 + rand(-50, 50) + G.mvx * push, vy: ny * side * sp * .6 - rand(80, 240) + G.mvy * push * .6, rot: rand(0, 6.3), vr: rand(-8, 8),
-    w: fluff ? rand(4, 8) : plastic ? rand(4, 8) : rand(7, 16), h: fluff ? 0 : plastic ? rand(3, 6) : rand(1.6, 3), fluff, plastic,
+    w: (fluff ? rand(4, 8) : plastic ? rand(4, 8) : rand(7, 16)) * (big || (G.catId === "white" && !rain ? .55 : 1)), h: (fluff ? 0 : plastic ? rand(3, 6) : rand(1.6, 3)) * (big ? big * .8 : 1), fluff, plastic,
     color: fluff ? (Math.random() < .7 ? "#ffffff" : m.fuzz) : plastic ? "rgba(255,255,255,.75)" : (Math.random() < .6 ? m.base2 : m.fuzz),
     floor: Ht - rand(4, G.rainBand)
   });
@@ -797,14 +818,14 @@ function onMove(x, y) {
   } else if (G.catId === "white") {
     G.jx = clamp(G.jx + rand(-3, 3), -12, 12); G.jy = clamp(G.jy + rand(-3, 3), -12, 12);
     G.paw.x = x + G.jx; G.paw.y = y + G.jy;
+    // 小弟：快、亂、碎——很多細小爪痕到處亂跑（像在抓癢），單筆破壞力小、碎片小而多
     const len = Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y);
-    claw(prev.x, prev.y, G.paw.x, G.paw.y, rand(.8, 1.3));
-    if (Math.random() < len / 220) {
-      // 分岔
-      const a = Math.atan2(G.paw.y - prev.y, G.paw.x - prev.x) + rand(-1.2, 1.2), l = rand(25, 55);
-      claw(G.paw.x, G.paw.y, G.paw.x + Math.cos(a) * l, G.paw.y + Math.sin(a) * l, .9);
+    claw(prev.x, prev.y, G.paw.x, G.paw.y, rand(.55, .85));
+    if (Math.random() < len / 60) {
+      // 一路冒出細碎的小抓痕，方向亂
+      const a = rand(0, Math.PI * 2), l = rand(8, 22), ox = rand(-14, 14), oy = rand(-14, 14);
+      claw(G.paw.x + ox, G.paw.y + oy, G.paw.x + ox + Math.cos(a) * l, G.paw.y + oy + Math.sin(a) * l, .5);
     }
-    if (Math.random() < len / 1400) punchArea(G.paw.x, G.paw.y, 20);
   } else return;   // 藍灰貓、哈士奇在動畫迴圈裡處理
   track(prev);
 }
@@ -902,8 +923,11 @@ function fingerTick(now) {
     // 哈士奇：跟得比較快、會甩過頭一點（戲劇性的大弧線）
     const prev = { x: G.paw.x, y: G.paw.y }, k = G.catId === "husky" ? (G.m.tough ? .26 : .32) : G.m.tough ? .16 : .18;
     G.paw.x += (G.fx - G.paw.x) * k; G.paw.y += (G.fy - G.paw.y) * k;
-    if (Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y) > .4) { claw(prev.x, prev.y, G.paw.x, G.paw.y); track(prev); }
+    const mv = Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y);
+    if (mv > .4) { claw(prev.x, prev.y, G.paw.x, G.paw.y); track(prev); }
     else FX.scratch(0);
+    // 哈士奇：一爪就撕下一大片（抓的次數少，但每次都是災難）
+    if (G.catId === "husky" && !G.done) { G.hRip = (G.hRip || 0) + mv; if (G.hRip > 70) { G.hRip = 0; huskyRip(G.paw.x, G.paw.y); } }
   }
   // 長按不動：蓋肉球印章，一圈一圈往外蓋滿
   const pr = G.press;
