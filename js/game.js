@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.0";
+const VERSION = "0.8.1";
 const CHANGES = [
+  "鞋帶和逗貓棒：貓會扭屁股撲上去咬住、甩頭拖走；髮圈改成拍飛追著玩（感謝玩家回報）",
   "抓到一半貓會分心：追飛出去的碎片、聽到腳步聲裝沒事",
   "抓完可以拍「慘狀照」：拉遠看整個現場，貓坐在旁邊一臉無辜",
   "卡片會翻面彈出、光掃過；用手指拖著卡片會傾斜，閃亮版的彩虹跟著角度跑",
@@ -1443,7 +1444,7 @@ function gift(cd, id) {
 const wait = ms => new Promise(r => setTimeout(r, ms));
 function react(cd, id, fav) {
   const R = $("#react"), stage = R.querySelector(".stage"), cat = R.querySelector(".rcat"), g = R.querySelector(".rgift"), cap = R.querySelector("p");
-  const kind = cd.like === "none" ? "none" : cd.id === "kibble" ? "kibble" : cd.id === "cattree" ? "cattree" : cd.like === "all" ? "kibble" : cd.like;
+  const kind = cd.act || (cd.like === "none" ? "none" : cd.id === "kibble" ? "kibble" : cd.id === "cattree" ? "cattree" : cd.like === "all" ? "kibble" : cd.like);
   const sit = catImg(id, "sit", "rpic");
   cat.innerHTML = sit; g.src = cardImg(cd.id);
   stage.className = "stage k-" + kind; stage.style.backgroundImage = kind === "cattree" ? `url(${cardImg(cd.id)})` : "";
@@ -1472,6 +1473,16 @@ function react(cd, id, fav) {
       FX.purr(1.4);
       const kick = []; for (let i = 0; i < 10; i++) kick.push(tf(0, 0, i % 2 ? 10 : -10, 1));
       await Promise.all([A(cat, kick, 900, "linear"), A(g, kick.map((k, i) => tf(-70 + (i % 2 ? 6 : -6), -30, -20)), 900, "linear")]);
+    } else if (kind === "string") {
+      // 繩子類：趴低扭屁股 → 撲上去 → 咬住 → 叼著甩頭拖走
+      const gx = 90;
+      await A(g, [tf(0, 0), tf(gx, 0, 20)], 300);
+      const wig = []; for (let i = 0; i < 8; i++) wig.push(tf(i % 2 ? 4 : -4, 8, 0, 1)); wig.push(tf(0, 8));
+      await A(cat, [tf(0, 0), tf(0, 8, 0, 1)], 200); await A(cat, wig, 700, "linear");
+      FX.boing(); await A(cat, [tf(0, 8), tf(gx * .6, -90, 10), tf(gx - 30, 0)], 450, "ease-out");
+      FX.tap(); bubbleIn(stage, T("咬！"), gx + 40, 160);
+      const shake = [], gs = []; for (let i = 0; i <= 10; i++) { const x = gx - 30 - i * 18; shake.push(tf(x, 0, i % 2 ? 9 : -9)); gs.push(tf(x - 40, 30 + (i % 2 ? -10 : 10), i % 2 ? 50 : -30)); }
+      await Promise.all([A(cat, shake, 1500, "linear"), A(g, gs, 1500, "linear")]);
     } else if (kind === "small") {
       // 慢慢推到桌邊 → 回頭看你一眼 → 推下去
       const edge = SW - 200;
@@ -1513,7 +1524,7 @@ function react(cd, id, fav) {
       if (R.hidden) return;
       ok.hidden = false;
       // 加分：把禮物丟出去，貓追著撲（貓跳台和不愛的不用）
-      if (kind === "toss" || kind === "soft" || kind === "kibble") { R.querySelector(".hint").hidden = false; flingOn(stage, cat, g, id); }
+      if (kind === "toss" || kind === "soft" || kind === "kibble" || kind === "string") { R.querySelector(".hint").hidden = false; flingOn(stage, cat, g, id); }
     });
   });
 }

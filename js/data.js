@@ -104,7 +104,7 @@ const MAT_ART = window.NO_ART ? {} : {
 // kind：caught 被抓包、treasure 寶物（可以送給貓）、prank 整人卡；rarity：1 普通、2 稀有、3 超稀有
 // sticker：去背貼紙圖（放在暖色底上），其他是滿版場景
 const CARDS = [
-  { id: "wand", kind: "treasure", like: "soft", rarity: 1, sticker: true, name: "逗貓棒", say: "找到逗貓棒！" },
+  { id: "wand", kind: "treasure", like: "soft", act: "string", rarity: 1, sticker: true, name: "逗貓棒", say: "找到逗貓棒！" },
   { id: "ball", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "鈴鐺球", say: "找到鈴鐺球和毛線球！" },
   { id: "kibble", kind: "treasure", like: "all", rarity: 1, sticker: true, name: "一包飼料", say: "找到一包飼料！" },
   { id: "fish", kind: "treasure", like: "soft", rarity: 1, sticker: true, name: "魚魚抱枕", say: "找到魚魚抱枕！" },
@@ -123,10 +123,10 @@ const GIFT_CARDS = [
   { id: "doll", group: "gift", kind: "treasure", like: "soft", rarity: 2, sticker: true, name: "小娃娃", say: "找到小娃娃！（現在是貓的了）" },
   { id: "pencap", group: "gift", kind: "treasure", like: "small", rarity: 1, sticker: true, name: "原子筆", say: "找到原子筆！（明天摩卡又要找筆了）" },
   { id: "bottlecap", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "寶特瓶蓋", say: "找到寶特瓶蓋！（一撥就滾好遠）" },
-  { id: "scrunchie", group: "gift", kind: "treasure", like: "soft", rarity: 1, sticker: true, name: "髮圈", say: "找到髮圈！（沙發底下還有十個）" },
+  { id: "scrunchie", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "髮圈", say: "找到髮圈！（沙發底下還有十個）" },
   { id: "paperball", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "紙團", say: "找到紙團！（比玩具還好玩）" },
   { id: "straw", group: "gift", kind: "treasure", like: "small", rarity: 1, sticker: true, name: "吸管", say: "找到吸管！" },
-  { id: "lace", group: "gift", kind: "treasure", like: "small", rarity: 2, sticker: true, name: "鞋帶", say: "找到鞋帶！（摩卡的鞋要散了）" },
+  { id: "lace", group: "gift", kind: "treasure", like: "soft", act: "string", rarity: 2, sticker: true, name: "鞋帶", say: "找到鞋帶！（摩卡的鞋要散了）" },
   { id: "tube", group: "gift", kind: "treasure", like: "toss", rarity: 1, sticker: true, name: "衛生紙捲筒", say: "找到衛生紙捲筒！" },
   { id: "bandball", group: "gift", kind: "treasure", like: "toss", rarity: 2, sticker: true, name: "橡皮筋球", say: "找到橡皮筋球！（彈得超高）" },
   { id: "button", group: "gift", kind: "treasure", like: "small", rarity: 2, sticker: true, name: "鈕扣", say: "找到鈕扣！（是哪件衣服的？）" },
@@ -148,10 +148,11 @@ const GIFT_BACK = {
   grey: { id: "gift_grey", name: "架構師的耳麥", say: "架構師把耳麥借你戴，說可以聽到呼嚕聲" },
   white: { id: "gift_white", name: "小弟的黃帽", say: "小弟把最愛的黃帽送你了（帽沿有咬過的痕跡）" }
 };
-// 收到禮物：貓真的會做的事（依禮物種類）；{0}＝貓、{1}＝禮物
+// 收到禮物：貓真的會做的事（依禮物種類，act 可以另外指定動作）；{0}＝貓、{1}＝禮物
 const REACT_LINE = {
   toss: "{0}一掌把{1}拍飛，追過去，再拍回來！",
   soft: "{0}抱住{1}在地上滾來滾去，後腳狂踢",
+  string: "{0}屁股扭一扭，撲上去咬住{1}，叼著甩頭拖走了",
   small: "{0}把{1}慢慢推到桌邊……看了你一眼……推下去",
   kibble: "{0}把頭埋進{1}，喀滋喀滋",
   cattree: "{0}一層一層爬上貓跳台，在最上面窩好",
