@@ -16,6 +16,8 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "抓完的呼嚕動畫可以跳過，直接看圖卡（感謝玩家回報）": "You can skip the purring ending and go straight to the card (thanks to player feedback)",
+  "跳過 ›": "Skip ›",
   "小弟收到喜歡的禮物會開心到 Z 字型爆衝": "Kit gets so excited about gifts he likes that he zigzags across the screen",
   "小弟太開心了，開始爆衝！": "Kit is so happy he's doing zoomies!",
   "（尾巴炸毛）": "(tail puffed up)",

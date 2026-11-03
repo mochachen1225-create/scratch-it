@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.7.2";
+const VERSION = "0.7.3";
 const CHANGES = [
+  "抓完的呼嚕動畫可以跳過，直接看圖卡（感謝玩家回報）",
   "小弟收到喜歡的禮物會開心到 Z 字型爆衝",
   "送高級貓窩時，貓窩變成大大一張放在貓旁邊（感謝玩家回報）",
   "兩隻手指一起抓＝兩隻貓掌；抓破時畫面會晃、碎片往手指方向噴、快破的地方會鼓起來",
@@ -1129,9 +1130,12 @@ function finish() {
   const loveUp = MAIN_CATS.includes(G.catId) ? addLove(G.catId, LOVE.paint + (G.found ? LOVE.found : 0)) : 0;
   save.styles = save.styles || {}; info.newStyle = !save.styles[info.style]; save.styles[info.style] = (save.styles[info.style] || 0) + 1;
   G.rainBand = Ht * .3; G.rainUntil = performance.now() + 1100;
-  setTimeout(diveIn, 1100);
-  setTimeout(async () => {
-    if (!G) return;
+  // 抓完的動畫可以跳過（點「跳過」或畫面任何地方）：呼嚕聲淡出、直接到圖卡
+  const g = G;
+  g.tDive = setTimeout(diveIn, 1100);
+  g.toCard = async () => {
+    if (!G || G !== g || g.cardShown) return;
+    g.cardShown = true; clearTimeout(g.tDive); clearTimeout(g.tCard);
     const card = await buildCard(info);
     cancelAnimationFrame(raf); FX.stop();
     show("cardScreen");
@@ -1155,8 +1159,15 @@ function finish() {
     seq = seq || Promise.resolve();
     if (loveUp) seq = seq.then(() => heartPop(info.cat, loveUp));
     seq.then(checkHusky);
-  }, 3300);
+  };
+  g.tCard = setTimeout(g.toCard, 3300);
 }
+function skipFinish(e) {
+  if (e) e.stopPropagation();
+  if (!G || !G.done || !G.toCard || G.cardShown) return;
+  FX.purrStop(); FX.tap(); G.rainUntil = 0; G.toCard();
+}
+$("#finish").addEventListener("pointerdown", skipFinish);
 // 貓跳進紙屑堆：畫在爪痕那一層，再用紙屑堆蓋住，只露出耳朵（小弟只露尾巴）
 const moundY = (x, y0) => y0 + 120 * Math.pow(Math.abs(x - Wd / 2) / (Wd / 2), 1.6);
 async function diveIn() {

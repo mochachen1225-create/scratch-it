@@ -129,6 +129,7 @@ const FX = {
     lfo.connect(lg).connect(g.gain);
     const env = c.createGain(); env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(1, t + 0.4); env.gain.setValueAtTime(1, t + sec - 0.6); env.gain.exponentialRampToValueAtTime(0.0001, t + sec);
     src.connect(lp).connect(g).connect(env).connect(c.destination);
+    this.purrEnv = env;
     src.start(t); lfo.start(t); src.stop(t + sec + 0.1); lfo.stop(t + sec + 0.1);
   },
   // 肉球印章：軟軟的「噗」，越蓋越高一點
@@ -185,5 +186,7 @@ const FX = {
   howl() { this.tone(330, 0.5, { type: "sawtooth", vol: 0.07, to: 620 }); this.tone(620, 0.7, { type: "sawtooth", vol: 0.07, at: 0.45, to: 420 }); this.tone(660, 0.9, { type: "sine", vol: 0.08, at: 0.1, to: 500 }); },
   // 爆衝的「咻」
   whoosh() { this.burst(0.22, 700, 3200, 0.22); },
+  // 跳過時呼嚕聲淡出（不要硬切）
+  purrStop() { if (!this.purrEnv || !this.ctx) return; const g = this.purrEnv.gain, t = this.ctx.currentTime; try { g.cancelScheduledValues(t); g.setValueAtTime(g.value || .5, t); g.setTargetAtTime(0.0001, t, 0.12); } catch {} this.purrEnv = null; },
   vibrate(ms) { if (!this.muted && navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
 };

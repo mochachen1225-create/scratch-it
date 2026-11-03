@@ -192,6 +192,7 @@
   .fh { position: absolute; bottom: 20px; font-size: 22px; animation: fh 2.4s ease-out forwards; opacity: 0; }
   @keyframes fh { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-240px) scale(1.2); } }
   #finish { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(253,243,227,.55); }
+  #finish .skip { position: absolute; right: 14px; bottom: max(80px, calc(env(safe-area-inset-bottom) + 70px)); font-family: inherit; font-size: 16px; padding: 6px 16px; border: 2.5px solid var(--ink); border-radius: 16px; background: var(--sheet); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
   #finish svg { width: 220px; height: 220px; animation: drop .6s cubic-bezier(.3,1.6,.5,1); }
   #finish p { font-size: 26px; margin: 4px 0 0; animation: purr 0.5s ease-in-out infinite alternate; }
   @keyframes drop { from { transform: translateY(-80px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -243,7 +244,7 @@
   </div>
   <div id="hint" data-t>用手指在紙上用力抓！</div>
   <button id="doneBtn" class="btn btn-pink" disabled data-t>抓夠了 👌</button>
-  <div id="finish" hidden><div id="finishCat"></div><p data-t>呼嚕呼嚕…</p></div>
+  <div id="finish" hidden><div id="finishCat"></div><p data-t>呼嚕呼嚕…</p><button id="skipBtn" class="skip" data-t>跳過 ›</button></div>
 </section>
 
 <!-- 圖卡 -->
@@ -296,11 +297,11 @@
 <div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.7.2"></script>
-<script src="js/i18n.en.js?v=0.7.2"></script>
-<script src="js/data.js?v=0.7.2"></script>
-<script src="js/cats.js?v=0.7.2"></script>
-<script src="js/fx.js?v=0.7.2"></script>
-<script src="js/game.js?v=0.7.2"></script>
+<script src="js/i18n.js?v=0.7.3"></script>
+<script src="js/i18n.en.js?v=0.7.3"></script>
+<script src="js/data.js?v=0.7.3"></script>
+<script src="js/cats.js?v=0.7.3"></script>
+<script src="js/fx.js?v=0.7.3"></script>
+<script src="js/game.js?v=0.7.3"></script>
 </body>
 </html>
