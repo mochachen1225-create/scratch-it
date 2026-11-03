@@ -16,6 +16,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "卡片會翻面彈出、光掃過；用手指拖著卡片會傾斜，閃亮版的彩虹跟著角度跑": "Cards flip in with a shine; drag a card to tilt it, and the shiny version's rainbow follows the angle",
   "找到驚喜插畫後可以「收下，結束」；想全部刮乾淨的人繼續抓，抓乾淨才會自動結束（感謝玩家回報）": "Once you find the surprise picture you can \"Take it & finish\"; or keep going until it's scratched clean and it ends by itself (thanks to player feedback)",
   "收下，結束 ›": "Take it & finish ›",
   "抓得一乾二淨！": "Scratched clean!",

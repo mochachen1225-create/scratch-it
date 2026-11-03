@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.7.4";
+const VERSION = "0.7.5";
 const CHANGES = [
+  "卡片會翻面彈出、光掃過；用手指拖著卡片會傾斜，閃亮版的彩虹跟著角度跑",
   "找到驚喜插畫後可以「收下，結束」；想全部刮乾淨的人繼續抓，抓乾淨才會自動結束（感謝玩家回報）",
   "抓完的呼嚕動畫可以跳過，直接看圖卡（感謝玩家回報）",
   "小弟收到喜歡的禮物會開心到 Z 字型爆衝",
@@ -1158,7 +1159,7 @@ function finish() {
     const card = await buildCard(info);
     cancelAnimationFrame(raf); FX.stop();
     show("cardScreen");
-    $("#cardImg").src = card.url; $("#saveBtn").href = card.url;
+    $("#cardImg").src = card.url; $("#saveBtn").href = card.url; flipIn($("#cardWrap"));
     $("#nextUnlock").textContent = nextUnlockLine();
     $("#bookBtn2").textContent = T("📒 收集冊 {0}/{1}", foundCount(), CARDS.length);
     shareFile = card.file;
@@ -1167,6 +1168,8 @@ function finish() {
     persist();
     G = null;
     // 解鎖新材質或破紀錄：三隻貓出來跳舞
+    await wait(750);   // 先讓圖卡翻面彈出來，再放慶祝
+    if (screen !== "cardScreen") return;
     let seq = null;
     if (complete) seq = dance(T("全收集！")).then(() => showCard(REWARD, true));
     else if (fresh.length) seq = dance(T("解鎖新材質！")).then(() => showUnlock(fresh[0]));
@@ -1322,7 +1325,43 @@ function openBook(tab) {
 }
 $("#tabPic").addEventListener("click", () => { FX.tap(); openBook("pic"); });
 $("#tabGift").addEventListener("click", () => { FX.tap(); openBook("gift"); });
-function openViewer() { $("#viewer").hidden = false; return new Promise(res => { openViewer.res = res; }); }
+function openViewer() {
+  $("#viewer").hidden = false; flipIn($("#viewerPic")); $("#viewerPic").classList.add("breathe"); startSparks();
+  return new Promise(res => { openViewer.res = res; });
+}
+/* ================= 卡片小動畫 ================= */
+// 拿到卡片：翻面彈出，接著一道光掃過去
+function flipIn(el) {
+  el.animate([{ transform: "perspective(800px) rotateY(100deg) scale(.6)", opacity: 0 }, { transform: "perspective(800px) rotateY(-14deg) scale(1.05)", opacity: 1, offset: .65 }, { transform: "perspective(800px) rotateY(0) scale(1)" }], { duration: 650, easing: "ease-out" });
+  const sh = el.querySelector(".sheen"); if (sh) { sh.classList.remove("go"); void sh.offsetWidth; sh.classList.add("go"); }
+  FX.tone(880, .12, { type: "triangle", vol: .08, at: .3, to: 1320 });
+}
+// 手指拖著卡片會跟著傾斜；閃亮版的彩虹反光跟著角度跑
+function makeTilt(el) {
+  const move = e => {
+    const r = el.getBoundingClientRect(), dx = clamp((e.clientX - r.left) / r.width - .5, -.5, .5), dy = clamp((e.clientY - r.top) / r.height - .5, -.5, .5);
+    el.style.transform = `perspective(800px) rotateY(${dx * 26}deg) rotateX(${-dy * 26}deg) scale(1.03)`;
+    el.style.setProperty("--sx", (50 - dx * 160) + "%");
+  };
+  el.addEventListener("dragstart", e => e.preventDefault());   // 不要被當成拖曳圖片
+  el.addEventListener("pointerdown", e => { el.classList.add("dragging"); try { el.setPointerCapture(e.pointerId); } catch {} move(e); });
+  el.addEventListener("pointermove", e => { if (el.classList.contains("dragging")) move(e); });
+  const up = () => { el.classList.remove("dragging"); el.style.transform = ""; };
+  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+}
+makeTilt($("#cardWrap")); makeTilt($("#viewerPic"));
+// 看大圖時飄小星星
+let sparkT = null;
+function startSparks() {
+  clearInterval(sparkT);
+  const box = $("#viewerPic .spark");
+  sparkT = setInterval(() => {
+    if ($("#viewer").hidden) { clearInterval(sparkT); return; }
+    const s = document.createElement("i"); s.textContent = Math.random() < .5 ? "✦" : "✧";
+    s.style.left = rand(2, 94) + "%"; s.style.top = rand(4, 90) + "%"; s.style.fontSize = rand(10, 20) + "px";
+    box.appendChild(s); setTimeout(() => s.remove(), 1900);
+  }, 280);
+}
 function showCard(cd, reward) {
   $("#viewerImg").src = cardImg(cd.id);
   const n = save.found[cd.id] || 0, shiny = !reward && n >= SHINY_AT;
@@ -1588,7 +1627,7 @@ function openAlbum() {
   const box = $("#album"); box.innerHTML = "";
   save.album.forEach(a => {
     const im = document.createElement("img"); im.src = a.img; im.alt = a.title;
-    im.addEventListener("click", () => { $("#viewerImg").src = a.img; $("#viewerTxt").textContent = ""; $("#viewerPic").classList.remove("shiny"); $("#viewer").hidden = false; FX.tap(); });
+    im.addEventListener("click", () => { $("#viewerImg").src = a.img; $("#viewerTxt").textContent = ""; $("#viewerPic").classList.remove("shiny"); openViewer(); FX.tap(); });
     box.appendChild(im);
   });
   $("#albumEmpty").hidden = save.album.length > 0;
@@ -1602,7 +1641,7 @@ function openAlbum() {
   };
   show("albumScreen");
 }
-$("#viewerClose").addEventListener("click", () => { $("#viewer").hidden = true; const r = openViewer.res; openViewer.res = null; if (r) r(); });
+$("#viewerClose").addEventListener("click", () => { $("#viewer").hidden = true; clearInterval(sparkT); $("#viewerPic").classList.remove("breathe"); const r = openViewer.res; openViewer.res = null; if (r) r(); });
 
 if (!ART) $("#aiNote").hidden = true;
 // 舊存檔升級：已經達成的條件，打開遊戲就解鎖

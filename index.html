@@ -201,6 +201,22 @@
   @keyframes purr { from { transform: translateX(-1px); } to { transform: translateX(1px); } }
 
   /* 圖卡、作品集 */
+  /* 卡片小動畫：翻面彈出＋光掃過、手指拖曳傾斜、看大圖時呼吸＋小星星 */
+  .tilt { position: relative; display: block; touch-action: none; transform-style: preserve-3d; transition: transform .35s cubic-bezier(.3,1.5,.5,1); will-change: transform; }
+  .tilt.dragging { transition: none; }
+  .tilt img { -webkit-user-drag: none; user-select: none; }
+  #cardWrap { width: 100%; max-width: 380px; }
+  .tilt .sheen { position: absolute; inset: 0; pointer-events: none; border-radius: 12px; overflow: hidden; opacity: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.75) 48%, rgba(255,255,255,.15) 56%, transparent 66%); background-size: 260% 100%; }
+  .tilt .sheen.go { animation: sheen .9s ease-out .35s forwards; }
+  @keyframes sheen { 0% { opacity: 1; background-position: 130% 0; } 100% { opacity: 1; background-position: -60% 0; } }
+  .tilt.dragging .sheen { opacity: .55; animation: none; background-position: var(--sx, 50%) 0; }
+  .pic.shiny.dragging::after { animation: none; background-position: var(--sx, 50%) 0; }
+  #viewerPic.breathe img { animation: breathe 3.2s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: scale(1.018); } }
+  .spark { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  .spark i { position: absolute; font-style: normal; color: #ffd96a; text-shadow: 0 0 6px #fff; font-size: 14px; animation: sparkle 1.8s ease-in-out forwards; }
+  @keyframes sparkle { 0% { opacity: 0; transform: translateY(0) scale(.3) rotate(0); } 30% { opacity: 1; transform: translateY(-8px) scale(1) rotate(40deg); } 100% { opacity: 0; transform: translateY(-34px) scale(.5) rotate(120deg); } }
   #cardImg { width: 100%; max-width: 380px; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); -webkit-touch-callout: default; }
   .album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
   .album img { width: 100%; border: 2.5px solid var(--ink); border-radius: 8px; cursor: pointer; display: block; }
@@ -251,7 +267,7 @@
 
 <!-- 圖卡 -->
 <section id="cardScreen" class="screen">
-  <img id="cardImg" alt="">
+  <div id="cardWrap" class="tilt"><img id="cardImg" alt=""><i class="sheen"></i></div>
   <p id="nextUnlock" class="small" style="font-size:16px;color:var(--ink)"></p>
   <div class="row2">
     <a id="saveBtn" class="btn btn-blue" download="scratch-it.png" data-t>💾 存圖</a>
@@ -294,16 +310,16 @@
 <div id="reveal" hidden></div>
 <div id="react" hidden><div class="stage"><div class="table"></div><div class="rcat"></div><img class="rgift" alt=""><div class="fcount"></div></div><p></p><small class="hint" hidden data-t>把禮物用手指甩出去，牠會追著撲！</small><button id="reactOk" class="btn" hidden data-t>好了</button></div>
 <div id="pickPop" class="overlay" hidden><div class="card"><div id="pickIc" class="gift-ic"></div><p id="pickTxt" style="margin:0;font-size:20px"></p><div id="pickCats" class="cats"></div><button id="pickClose" class="btn btn-ghost" data-t>先不要</button></div></div>
-<div id="viewer" class="overlay" hidden><div class="card"><span id="viewerPic" class="pic"><img id="viewerImg" alt=""></span><p id="viewerTxt" style="margin:0;font-size:17px;white-space:pre-line"></p><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
+<div id="viewer" class="overlay" hidden><div class="card"><span id="viewerPic" class="pic tilt"><img id="viewerImg" alt=""><i class="sheen"></i><span class="spark"></span></span><p id="viewerTxt" style="margin:0;font-size:17px;white-space:pre-line"></p><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
 <div id="unlockPop" class="overlay" hidden><div class="card"><div id="unlockIc" class="unlock-ic"></div><p id="unlockTxt" style="margin:0;font-size:20px"></p><button id="unlockOk" class="btn" data-t>太好了！</button></div></div>
 <div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.7.4"></script>
-<script src="js/i18n.en.js?v=0.7.4"></script>
-<script src="js/data.js?v=0.7.4"></script>
-<script src="js/cats.js?v=0.7.4"></script>
-<script src="js/fx.js?v=0.7.4"></script>
-<script src="js/game.js?v=0.7.4"></script>
+<script src="js/i18n.js?v=0.7.5"></script>
+<script src="js/i18n.en.js?v=0.7.5"></script>
+<script src="js/data.js?v=0.7.5"></script>
+<script src="js/cats.js?v=0.7.5"></script>
+<script src="js/fx.js?v=0.7.5"></script>
+<script src="js/game.js?v=0.7.5"></script>
 </body>
 </html>
