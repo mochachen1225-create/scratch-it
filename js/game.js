@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.4";
+const VERSION = "0.8.5";
 const CHANGES = [
+  "慘狀照裡的貓變大了（感謝玩家回報）",
   "沙發的慘狀照不會再出現兩張一樣的圖（感謝玩家回報）",
   "小弟和哈士奇手感拉開：小弟細碎亂抓、哈士奇一爪撕下一大片（感謝玩家回報）",
   "鞋帶會先用前爪拉開、扯長再咬；總編的爪痕整齊但比較自然，歪了會補一筆（感謝玩家回報）",
@@ -1760,7 +1761,7 @@ async function buildPhoto(R) {
     x.lineWidth = 8; x.strokeStyle = "#3a2e2a"; x.stroke(back); x.stroke(seat);
     x.strokeStyle = "rgba(58,46,42,.35)"; x.lineWidth = 4; x.beginPath(); x.moveTo(140, 652); x.lineTo(940, 652); x.stroke();
     x.fillStyle = m.base2; for (const ax of [70, 930]) { roundRect(x, ax, 520, 90, 300, 36); x.fill(); x.stroke(); }
-    catX = 40; catY = 860; catS = 300;
+    catX = 10; catS = 480; catY = 1255 - catS;
   } else {
     // 貓抓板／泡泡紙：放在地上，稍微斜一點
     x.save(); x.translate(400, 980); x.rotate(-.05);
@@ -1768,7 +1769,7 @@ async function buildPhoto(R) {
     x.save(); roundRect(x, -300, -170, 600, 360, 18); x.clip(); drawSnap(-300, -170, 600, 360); x.restore();
     x.lineWidth = 7; x.strokeStyle = "#3a2e2a"; roundRect(x, -300, -170, 600, 360, 18); x.stroke();
     x.restore();
-    catX = 700; catY = 620; catS = 340;
+    catX = 560; catS = 500; catY = 1255 - catS;
   }
   // 碎屑撒滿地
   const col = m.debris === "fluff" ? ["#ffffff", m.fuzz] : m.debris === "plastic" ? ["rgba(255,255,255,.85)", "#cfe6f5"] : [m.base2, m.fuzz, "#c79d66"];
@@ -1781,10 +1782,12 @@ async function buildPhoto(R) {
   // 貓坐在旁邊，一臉無辜
   const id = info.cat, src = ART && ART[id] && (id === "husky" ? ART[id].box : ART[id].sit);
   const im = (await loadImg(src)) || await svgImage(catSVG(id, "sit"));
-  if (im) { const k = catS / Math.max(im.width, im.height); x.drawImage(im, catX, catY + (catS - im.height * k), im.width * k, im.height * k); }
-  // 對話框
+  // 角色放大（約畫面高度的 1/3～2/5），站在碎屑堆前面
+  let top = catY;
+  if (im) { const k = catS / Math.max(im.width, im.height), h = im.height * k; top = catY + (catS - h); x.drawImage(im, catX, top, im.width * k, h); }
+  // 對話框放在角色頭上，不擋到角色
   const line = `${W(CATS[id].name)}：${T(PHOTO_LINE[id] || PHOTO_LINE.orange)}`;
-  x.font = F(40, true); const tw = Math.min(900, x.measureText(line).width + 60), bx = clamp(catX + catS / 2 - tw / 2, 30, W0 - tw - 30), by = catY - 110;
+  x.font = F(40, true); const tw = Math.min(900, x.measureText(line).width + 60), bx = clamp(catX + catS / 2 - tw / 2, 30, W0 - tw - 30), by = Math.max(200, top - 104);
   x.fillStyle = "#fff"; roundRect(x, bx, by, tw, 84, 26); x.fill(); x.lineWidth = 5; x.strokeStyle = "#3a2e2a"; x.stroke();
   x.fillStyle = "#3a2e2a"; x.textAlign = "center"; x.fillText(line, bx + tw / 2, by + 56, tw - 40);
   // 標題和網址
