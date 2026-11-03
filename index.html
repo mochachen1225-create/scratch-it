@@ -191,6 +191,9 @@
   @keyframes zl { from { opacity: 1; transform: scaleX(1); } to { opacity: 0; transform: scaleX(.3); } }
   .zdust { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: rgba(200,170,130,.7); animation: zd .6s ease-out forwards; }
   @keyframes zd { from { opacity: .9; transform: scale(.5); } to { opacity: 0; transform: translateY(-22px) scale(1.6); } }
+  .bigscrap { position: fixed; left: 0; top: 0; z-index: 14; width: 46px; height: 16px; border: 2px solid rgba(60,40,20,.5); border-radius: 3px; pointer-events: none; }
+  .chaser { position: fixed; left: 0; top: 0; z-index: 14; width: 90px; pointer-events: none; }
+  .chaser .chasepic, .chaser svg { width: 90px; height: 90px; object-fit: contain; display: block; }
   .fh { position: absolute; bottom: 20px; font-size: 22px; animation: fh 2.4s ease-out forwards; opacity: 0; }
   @keyframes fh { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-240px) scale(1.2); } }
   #finish { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(253,243,227,.55); }
@@ -273,6 +276,7 @@
     <a id="saveBtn" class="btn btn-blue" download="scratch-it.png" data-t>💾 存圖</a>
     <button id="shareBtn" class="btn btn-blue" data-t>📤 分享</button>
   </div>
+  <button id="photoBtn" class="btn btn-ghost" data-t>📸 拍慘狀照</button>
   <button id="againBtn" class="btn" data-t>🔁 再抓一張</button>
   <div class="row2">
     <button id="homeBtn" class="btn btn-ghost" data-t>🐱 換貓／材質</button>
@@ -310,16 +314,16 @@
 <div id="reveal" hidden></div>
 <div id="react" hidden><div class="stage"><div class="table"></div><div class="rcat"></div><img class="rgift" alt=""><div class="fcount"></div></div><p></p><small class="hint" hidden data-t>把禮物用手指甩出去，牠會追著撲！</small><button id="reactOk" class="btn" hidden data-t>好了</button></div>
 <div id="pickPop" class="overlay" hidden><div class="card"><div id="pickIc" class="gift-ic"></div><p id="pickTxt" style="margin:0;font-size:20px"></p><div id="pickCats" class="cats"></div><button id="pickClose" class="btn btn-ghost" data-t>先不要</button></div></div>
-<div id="viewer" class="overlay" hidden><div class="card"><span id="viewerPic" class="pic tilt"><img id="viewerImg" alt=""><i class="sheen"></i><span class="spark"></span></span><p id="viewerTxt" style="margin:0;font-size:17px;white-space:pre-line"></p><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
+<div id="viewer" class="overlay" hidden><div class="card"><span id="viewerPic" class="pic tilt"><img id="viewerImg" alt=""><i class="sheen"></i><span class="spark"></span></span><p id="viewerTxt" style="margin:0;font-size:17px;white-space:pre-line"></p><div id="viewerActs" class="row2" hidden><a id="photoSave" class="btn btn-blue" download="scratch-it-photo.png" data-t>💾 存圖</a><button id="photoShare" class="btn btn-blue" data-t>📤 分享</button></div><button id="viewerClose" class="btn btn-ghost" data-t>關閉</button></div></div>
 <div id="unlockPop" class="overlay" hidden><div class="card"><div id="unlockIc" class="unlock-ic"></div><p id="unlockTxt" style="margin:0;font-size:20px"></p><button id="unlockOk" class="btn" data-t>太好了！</button></div></div>
 <div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.7.5"></script>
-<script src="js/i18n.en.js?v=0.7.5"></script>
-<script src="js/data.js?v=0.7.5"></script>
-<script src="js/cats.js?v=0.7.5"></script>
-<script src="js/fx.js?v=0.7.5"></script>
-<script src="js/game.js?v=0.7.5"></script>
+<script src="js/i18n.js?v=0.8.0"></script>
+<script src="js/i18n.en.js?v=0.8.0"></script>
+<script src="js/data.js?v=0.8.0"></script>
+<script src="js/cats.js?v=0.8.0"></script>
+<script src="js/fx.js?v=0.8.0"></script>
+<script src="js/game.js?v=0.8.0"></script>
 </body>
 </html>

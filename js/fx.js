@@ -188,5 +188,7 @@ const FX = {
   whoosh() { this.burst(0.22, 700, 3200, 0.22); },
   // 跳過時呼嚕聲淡出（不要硬切）
   purrStop() { if (!this.purrEnv || !this.ctx) return; const g = this.purrEnv.gain, t = this.ctx.currentTime; try { g.cancelScheduledValues(t); g.setValueAtTime(g.value || .5, t); g.setTargetAtTime(0.0001, t, 0.12); } catch {} this.purrEnv = null; },
+  // 腳步聲：悶悶的「咚」
+  thud(v = 1) { this.tone(70, 0.16, { type: "sine", vol: 0.25 * v, to: 45 }); this.burst(0.08, 260, 120, 0.25 * v, "lowpass"); },
   vibrate(ms) { if (!this.muted && navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
 };
