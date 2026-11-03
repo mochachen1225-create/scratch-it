@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.3";
+const VERSION = "0.8.4";
 const CHANGES = [
+  "沙發的慘狀照不會再出現兩張一樣的圖（感謝玩家回報）",
   "小弟和哈士奇手感拉開：小弟細碎亂抓、哈士奇一爪撕下一大片（感謝玩家回報）",
   "鞋帶會先用前爪拉開、扯長再咬；總編的爪痕整齊但比較自然，歪了會補一筆（感謝玩家回報）",
   "鞋帶和逗貓棒：貓會扭屁股撲上去咬住、甩頭拖走；髮圈改成拍飛追著玩（感謝玩家回報）",
@@ -1750,9 +1751,14 @@ async function buildPhoto(R) {
   if (m.id === "sofa") {
     // 沙發：椅背和坐墊用這局抓爛的布
     x.fillStyle = "#3a2e2a"; x.fillRect(150, 560, 28, 300); x.fillRect(900, 560, 28, 300);
-    x.save(); roundRect(x, 130, 380, 820, 300, 40); x.clip(); drawSnap(130, 380, 820, 300); x.restore();
-    x.lineWidth = 8; x.strokeStyle = "#3a2e2a"; roundRect(x, 130, 380, 820, 300, 40); x.stroke();
-    x.save(); roundRect(x, 110, 640, 860, 170, 36); x.clip(); drawSnap(110, 640, 860, 170); x.restore(); roundRect(x, 110, 640, 860, 170, 36); x.stroke();
+    // 同一張畫面只貼一次：橫跨椅背＋坐墊（剪成兩塊的形狀），插畫不會重複出現
+    x.save(); x.beginPath();
+    roundRect(x, 130, 380, 820, 300, 40); const back = new Path2D(); back.roundRect ? back.roundRect(130, 380, 820, 300, 40) : back.rect(130, 380, 820, 300);
+    const seat = new Path2D(); seat.roundRect ? seat.roundRect(110, 640, 860, 170, 36) : seat.rect(110, 640, 860, 170);
+    const both = new Path2D(); both.addPath(back); both.addPath(seat);
+    x.clip(both); drawSnap(110, 380, 860, 430); x.restore();
+    x.lineWidth = 8; x.strokeStyle = "#3a2e2a"; x.stroke(back); x.stroke(seat);
+    x.strokeStyle = "rgba(58,46,42,.35)"; x.lineWidth = 4; x.beginPath(); x.moveTo(140, 652); x.lineTo(940, 652); x.stroke();
     x.fillStyle = m.base2; for (const ax of [70, 930]) { roundRect(x, ax, 520, 90, 300, 36); x.fill(); x.stroke(); }
     catX = 40; catY = 860; catS = 300;
   } else {
