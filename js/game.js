@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.7.1";
+const VERSION = "0.7.2";
 const CHANGES = [
+  "小弟收到喜歡的禮物會開心到 Z 字型爆衝",
   "送高級貓窩時，貓窩變成大大一張放在貓旁邊（感謝玩家回報）",
   "兩隻手指一起抓＝兩隻貓掌；抓破時畫面會晃、碎片往手指方向噴、快破的地方會鼓起來",
   "送禮物不跳舞了：貓會拍飛、抱住踢、推下桌、埋頭吃，不愛的就轉身背對你；還可以把禮物丟出去給牠追",
@@ -1392,6 +1393,8 @@ function react(cd, id, fav) {
       FX.sad();
       await A(cat, [tf(nx - 30, 0), tf(nx - 30, 0, 3), tf(nx - 30, 0, -3), tf(nx - 30, 0)], 1200);
     }
+    // 小弟收到喜歡的禮物：興奮到在螢幕上 Z 字型爆衝，最後急煞、尾巴炸毛（點一下跳過）
+    if (id === "white" && (fav || cd.like === "all") && kind !== "cattree") await kitZoomies(stage, cat, cap, SW);
   })();
   cap.textContent = (fav ? `💕 ${T("最愛的！")}` : "") + T(REACT_LINE[kind], cname, name);
   if (fav) hearts3(stage);
@@ -1405,6 +1408,34 @@ function react(cd, id, fav) {
       if (kind === "toss" || kind === "soft" || kind === "kibble") { R.querySelector(".hint").hidden = false; flingOn(stage, cat, g, id); }
     });
   });
+}
+async function kitZoomies(stage, cat, cap, SW) {
+  await wait(250);
+  cap.textContent = T("小弟太開心了，開始爆衝！");
+  let skip = false; const R = $("#react"), onTap = () => { skip = true; }; R.addEventListener("pointerdown", onTap);
+  const from = getComputedStyle(cat).transform; const start = from && from !== "none" ? from : "none";
+  const pts = [[SW - 165, -40, 1], [10, -150, -1], [SW - 160, -210, 1], [30, -80, -1], [SW - 170, -10, 1], [0, 0, -1]];
+  let prev = start;
+  for (const [x, y, dir] of pts) {
+    if (skip) break;
+    const to = `translate(${x}px,${y}px) scaleX(${dir}) rotate(${dir * -8}deg)`;
+    FX.whoosh(); speedLines(stage, x, y, dir);
+    await cat.animate([{ transform: prev }, { transform: to }], { duration: 330, easing: "cubic-bezier(.5,0,.6,1)", fill: "forwards" }).finished;
+    dust(stage, x + 70, -y); prev = to;
+  }
+  R.removeEventListener("pointerdown", onTap);
+  // 急煞停在原位、尾巴炸毛
+  const stop = "translate(0px,0px) scaleX(1) rotate(0deg)";
+  await cat.animate([{ transform: prev }, { transform: "translate(6px,0px) scaleX(1) rotate(10deg) scale(1.1,.9)" }, { transform: stop }], { duration: 300, fill: "forwards" }).finished;
+  FX.boing(); dust(stage, 80, 0); bubbleIn(stage, T("（尾巴炸毛）"), 100, 170);
+  const puff = []; for (let i = 0; i < 8; i++) puff.push({ transform: `${stop} scale(${i % 2 ? 1.08 : 1.02})` });
+  await cat.animate(puff, { duration: 700, fill: "forwards" }).finished;
+}
+function speedLines(stage, x, y, dir) {
+  for (let i = 0; i < 3; i++) { const l = document.createElement("i"); l.className = "zline"; l.style.left = (x + 75 - dir * (40 + i * 18)) + "px"; l.style.bottom = (-y + 40 + i * 28) + "px"; stage.appendChild(l); setTimeout(() => l.remove(), 420); }
+}
+function dust(stage, x, y) {
+  for (let i = 0; i < 5; i++) { const d = document.createElement("i"); d.className = "zdust"; d.style.left = (x + rand(-20, 20)) + "px"; d.style.bottom = (y + rand(0, 10)) + "px"; d.style.animationDelay = rand(0, .1) + "s"; stage.appendChild(d); setTimeout(() => d.remove(), 650); }
 }
 function hearts3(stage) {
   for (let i = 0; i < 8; i++) { const h = document.createElement("span"); h.className = "fh"; h.textContent = "💕"; h.style.left = rand(10, 90) + "%"; h.style.animationDelay = rand(0, 1.2) + "s"; stage.appendChild(h); setTimeout(() => h.remove(), 3200); }

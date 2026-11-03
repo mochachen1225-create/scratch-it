@@ -185,6 +185,10 @@
   #react p { font-size: 20px; font-weight: 700; text-align: center; margin: 0; min-height: 52px; }
   #react .hint { color: var(--muted); font-size: 14px; } #react .fcount { position: absolute; top: 8px; right: 10px; font-size: 18px; font-weight: 700; }
   #react .btn { width: auto; padding: 10px 40px; }
+  .zline { position: absolute; width: 46px; height: 3px; border-radius: 2px; background: rgba(58,46,42,.45); animation: zl .42s ease-out forwards; }
+  @keyframes zl { from { opacity: 1; transform: scaleX(1); } to { opacity: 0; transform: scaleX(.3); } }
+  .zdust { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: rgba(200,170,130,.7); animation: zd .6s ease-out forwards; }
+  @keyframes zd { from { opacity: .9; transform: scale(.5); } to { opacity: 0; transform: translateY(-22px) scale(1.6); } }
   .fh { position: absolute; bottom: 20px; font-size: 22px; animation: fh 2.4s ease-out forwards; opacity: 0; }
   @keyframes fh { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-240px) scale(1.2); } }
   #finish { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(253,243,227,.55); }
@@ -292,11 +296,11 @@
 <div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.7.1"></script>
-<script src="js/i18n.en.js?v=0.7.1"></script>
-<script src="js/data.js?v=0.7.1"></script>
-<script src="js/cats.js?v=0.7.1"></script>
-<script src="js/fx.js?v=0.7.1"></script>
-<script src="js/game.js?v=0.7.1"></script>
+<script src="js/i18n.js?v=0.7.2"></script>
+<script src="js/i18n.en.js?v=0.7.2"></script>
+<script src="js/data.js?v=0.7.2"></script>
+<script src="js/cats.js?v=0.7.2"></script>
+<script src="js/fx.js?v=0.7.2"></script>
+<script src="js/game.js?v=0.7.2"></script>
 </body>
 </html>
