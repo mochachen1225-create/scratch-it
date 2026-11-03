@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.7.0";
+const VERSION = "0.7.1";
 const CHANGES = [
+  "送高級貓窩時，貓窩變成大大一張放在貓旁邊（感謝玩家回報）",
   "兩隻手指一起抓＝兩隻貓掌；抓破時畫面會晃、碎片往手指方向噴、快破的地方會鼓起來",
   "送禮物不跳舞了：貓會拍飛、抱住踢、推下桌、埋頭吃，不愛的就轉身背對你；還可以把禮物丟出去給牠追",
   "小弟也會從畫面下面探頭來蹭你；哈士奇有了躺姿、拆爛紙箱和自己的掌",
@@ -1381,13 +1382,15 @@ function react(cd, id, fav) {
       for (const [x, y] of [[40, -70], [90, -150], [60, -230]]) { await A(cat, [tf(px, py, 0, ps), tf((px + x) / 2, y - 30, 0, .9), tf(x, y, 0, .85)], 550, "ease-out"); px = x; py = y; ps = .85; FX.tap(); await wait(150); }
     } else {
       // 聞一聞 → 轉身背對你
-      await A(cat, [tf(0, 0), tf(70, 0)], 600);
-      for (let i = 0; i < 2; i++) { await A(cat, [tf(70, 0), tf(80, 6, 6), tf(70, 0)], 380); }
+      // 貓窩是大東西：放在貓旁邊不動，貓走過去聞
+      const nx = Math.max(10, SW - 6 - 170 - 150 + 20);
+      await A(cat, [tf(0, 0), tf(nx, 0)], 600);
+      for (let i = 0; i < 2; i++) { await A(cat, [tf(nx, 0), tf(nx + 10, 6, 6), tf(nx, 0)], 380); }
       await wait(300);
       cat.innerHTML = ART && ART[id] && ART[id].back ? `<img class="rpic" src="${ART[id].back}" alt="">` : sit;
       if (!(ART && ART[id] && ART[id].back)) cat.style.transform = "scaleX(-1)";
       FX.sad();
-      await A(cat, [tf(70, 0), tf(70, 0, 3), tf(70, 0, -3), tf(70, 0)], 1200);
+      await A(cat, [tf(nx - 30, 0), tf(nx - 30, 0, 3), tf(nx - 30, 0, -3), tf(nx - 30, 0)], 1200);
     }
   })();
   cap.textContent = (fav ? `💕 ${T("最愛的！")}` : "") + T(REACT_LINE[kind], cname, name);

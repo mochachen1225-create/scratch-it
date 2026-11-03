@@ -16,6 +16,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "送高級貓窩時，貓窩變成大大一張放在貓旁邊（感謝玩家回報）": "The fancy cat bed now shows up big, next to the cat (thanks to player feedback)",
   "最愛的！": "Favorite! ",
   "兩隻手指一起抓＝兩隻貓掌；抓破時畫面會晃、碎片往手指方向噴、快破的地方會鼓起來": "Scratch with two fingers for two paws; the screen jolts when things tear, scraps fly where your finger goes, and nearly-torn spots puff up",
   "送禮物不跳舞了：貓會拍飛、抱住踢、推下桌、埋頭吃，不愛的就轉身背對你；還可以把禮物丟出去給牠追": "Gifts get real cat reactions: swatting, bunny-kicking, pushing off the table, munching, or turning their back if they don't care; you can also fling the gift for them to chase",
