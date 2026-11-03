@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.1";
+const VERSION = "0.8.2";
 const CHANGES = [
+  "鞋帶會先用前爪拉開、扯長再咬；總編的爪痕整齊但比較自然，歪了會補一筆（感謝玩家回報）",
   "鞋帶和逗貓棒：貓會扭屁股撲上去咬住、甩頭拖走；髮圈改成拍飛追著玩（感謝玩家回報）",
   "抓到一半貓會分心：追飛出去的碎片、聽到腳步聲裝沒事",
   "抓完可以拍「慘狀照」：拉遠看整個現場，貓坐在旁邊一臉無辜",
@@ -782,12 +783,17 @@ function onMove(x, y) {
     if (!s.dir) {
       // 方向還沒決定前也先畫，手指一碰就有反應；6px 後鎖定方向
       if (Math.hypot(vx, vy) < 6) { G.paw.x = x; G.paw.y = y; claw(prev.x, prev.y, x, y); track(prev); return; }
+      // 整齊但不僵硬：鎖在最近的 45°，再微微偏 8～12°、帶一點弧度、力道有變化；偶爾一筆歪掉（之後自動補一筆整齊的）
       const a = Math.round(Math.atan2(vy, vx) / (Math.PI / 4)) * (Math.PI / 4);
-      s.dir = { x: Math.cos(a), y: Math.sin(a) }; s.ax = prev.x; s.ay = prev.y;
+      s.wobble = Math.random() < .15;
+      const off = (s.wobble ? rand(16, 24) : rand(8, 12)) * (Math.random() < .5 ? -1 : 1) * Math.PI / 180;
+      s.base = a; s.dir = { x: Math.cos(a + off), y: Math.sin(a + off) }; s.ax = prev.x; s.ay = prev.y;
+      s.curv = rand(-6, 6); s.pow = rand(.85, 1.15);
     }
-    const d = vx * s.dir.x + vy * s.dir.y;
-    G.paw.x = s.ax + s.dir.x * d; G.paw.y = s.ay + s.dir.y * d;
-    claw(prev.x, prev.y, G.paw.x, G.paw.y);
+    const d = Math.max(0, (x - s.ax) * s.dir.x + (y - s.ay) * s.dir.y), bend = Math.sin(d / 90) * s.curv;
+    G.paw.x = s.ax + s.dir.x * d - s.dir.y * bend; G.paw.y = s.ay + s.dir.y * d + s.dir.x * bend;
+    s.len = d;
+    claw(prev.x, prev.y, G.paw.x, G.paw.y, s.pow);
   } else if (G.catId === "white") {
     G.jx = clamp(G.jx + rand(-3, 3), -12, 12); G.jy = clamp(G.jy + rand(-3, 3), -12, 12);
     G.paw.x = x + G.jx; G.paw.y = y + G.jy;
@@ -842,6 +848,16 @@ function fingerDown(e) {
 }
 function fingerUp() {
   const s = G.stroke;
+  // 總編歪了一筆：像強迫症一樣，馬上沿著正確的角度補一筆整齊的
+  if (G.catId === "orange" && s && s.wobble && s.len > 40) {
+    const g = G, x0 = s.ax, y0 = s.ay, a = s.base, L = s.len * .9;
+    setTimeout(() => {
+      if (G !== g || G.done) return;
+      for (let t = 0; t < L; t += 6) claw(x0 + Math.cos(a) * t, y0 + Math.sin(a) * t, x0 + Math.cos(a) * (t + 6), y0 + Math.sin(a) * (t + 6));
+      FX.scratch(1.2); setTimeout(() => FX.quiet(), 120);
+      if (Math.random() < .35) bubble(T("（歪了，再補一筆整齊的）"), x0 - 60, y0 - 70);
+    }, 180);
+  }
   if (s && s.path > 5) {
     const dx = G.paw.x - s.sx, dy = G.paw.y - s.sy, d = Math.hypot(dx, dy);
     G.strokes.push({ path: s.path, straight: Math.min(1, Math.hypot(G.paw.x - s.ax, G.paw.y - s.ay) / s.path) * (G.catId === "orange" ? 0 : 1) + (G.catId === "orange" ? 1 : 0),
@@ -1474,9 +1490,20 @@ function react(cd, id, fav) {
       const kick = []; for (let i = 0; i < 10; i++) kick.push(tf(0, 0, i % 2 ? 10 : -10, 1));
       await Promise.all([A(cat, kick, 900, "linear"), A(g, kick.map((k, i) => tf(-70 + (i % 2 ? 6 : -6), -30, -20)), 900, "linear")]);
     } else if (kind === "string") {
-      // 繩子類：趴低扭屁股 → 撲上去 → 咬住 → 叼著甩頭拖走
+      // 繩子類：趴低扭屁股 → 撲上去 → 咬住 → 叼著甩頭拖走；鞋帶先用前爪拉開、扯直（小玩家指定「拉開咬」）
       const gx = 90;
       await A(g, [tf(0, 0), tf(gx, 0, 20)], 300);
+      if (cd.id === "lace") {
+        const st = (x, sx) => ({ transform: `translate(${x}px,0px) scale(${sx},${1 / Math.sqrt(sx)})` });
+        await A(cat, [tf(0, 0), tf(30, 0, 6)], 350);
+        bubbleIn(stage, T("拉～長～"), gx + 20, 150);
+        for (const [cx, gs] of [[-5, 1.6], [20, 1.2], [-25, 2.2]]) {
+          await Promise.all([A(cat, [tf(30, 0, 6), tf(cx, 4, -10)], 380), A(g, [st(gx, 1), st(gx + 20, gs)], 380, "ease-out")]);
+          FX.twang(.8);
+          await Promise.all([A(cat, [tf(cx, 4, -10), tf(30, 0, 6)], 220), A(g, [st(gx + 20, gs), st(gx, 1)], 220)]);
+        }
+        await A(cat, [tf(30, 0, 6), tf(0, 0)], 200);
+      }
       const wig = []; for (let i = 0; i < 8; i++) wig.push(tf(i % 2 ? 4 : -4, 8, 0, 1)); wig.push(tf(0, 8));
       await A(cat, [tf(0, 0), tf(0, 8, 0, 1)], 200); await A(cat, wig, 700, "linear");
       FX.boing(); await A(cat, [tf(0, 8), tf(gx * .6, -90, 10), tf(gx - 30, 0)], 450, "ease-out");
@@ -1515,7 +1542,7 @@ function react(cd, id, fav) {
     // 小弟收到喜歡的禮物：興奮到在螢幕上 Z 字型爆衝，最後急煞、尾巴炸毛（點一下跳過）
     if (id === "white" && (fav || cd.like === "all") && kind !== "cattree") await kitZoomies(stage, cat, cap, SW);
   })();
-  cap.textContent = (fav ? `💕 ${T("最愛的！")}` : "") + T(REACT_LINE[kind], cname, name);
+  cap.textContent = (fav ? `💕 ${T("最愛的！")}` : "") + T(REACT_LINE[cd.id === "lace" ? "lace" : kind], cname, name);
   if (fav) hearts3(stage);
   return new Promise(res => {
     const done = () => { R.hidden = true; R.onclick = null; flingOff(); res(); };
