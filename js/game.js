@@ -1,6 +1,8 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.6.2";
+const VERSION = "0.7.0";
 const CHANGES = [
+  "兩隻手指一起抓＝兩隻貓掌；抓破時畫面會晃、碎片往手指方向噴、快破的地方會鼓起來",
+  "送禮物不跳舞了：貓會拍飛、抱住踢、推下桌、埋頭吃，不愛的就轉身背對你；還可以把禮物丟出去給牠追",
   "小弟也會從畫面下面探頭來蹭你；哈士奇有了躺姿、拆爛紙箱和自己的掌",
   "跳舞換上新的 Disco 舞曲；哈士奇變成拆家搞笑擔當",
   "好感度：每隻貓最多 5 顆❤️，只會越來越愛；滿 5 顆送你回禮",
@@ -282,12 +284,15 @@ function roundRect(c, x, y, w, h, r) {
 /* ================= 開始一局 ================= */
 function startGame() {
   const cat = CATS[save.cat], m = matById(save.mat);
-  show("play"); $("#peek").hidden = true;
+  show("play"); $("#peek").hidden = true; $("#paw3").hidden = true;
   setupCanvas();
   G = {
     catId: save.cat, cat, m, holes: 0, bursts: 0, rainUntil: 0, rainBand: 46,
     start: performance.now(), scratchMs: 0, particles: [], down: false, pid: null,
-    fx: 0, fy: 0, paw: { x: Wd / 2, y: Ht / 2 }, stroke: null, strokes: [], moved: 0, lastT: 0,
+    fx: 0, fy: 0, paw: { x: Wd / 2, y: Ht / 2 }, stroke: null, strokes: [], moved: 0, lastT: 0, pawEl: $("#paw"),
+    // 第二根手指＝第二隻貓掌（處理時跟上面這組欄位對調）
+    f2: { pid: null, down: false, paw: { x: 0, y: 0 }, stroke: null, press: null, fx: 0, fy: 0, lx: 0, ly: 0, jx: 0, jy: 0, lastT: 0, pawEl: $("#paw3") },
+    mvx: 0, mvy: 0, shakeUntil: 0, shakeAmp: 0, hot: new Set(),
     frenzyRun: 0, lastMove: 0, nextBurst: performance.now() + rand(6000, 10000), burstUntil: 0, jx: 0, jy: 0,
     progress: 0, done: false, minX: Wd, minY: Ht, maxX: 0, maxY: 0,
     press: null, stamps: 0, rows: 0, rowDone: {}, lastRowFx: 0,
@@ -319,7 +324,7 @@ function startGame() {
 }
 $("#quitBtn").addEventListener("click", () => { FX.tap(); endPlay(); show("home"); renderHome(); });
 $("#doneBtn").addEventListener("click", () => { if (G && !G.done) { G.pressedDone = true; finish(); } });
-function endPlay() { cancelAnimationFrame(raf); FX.stop(); cv.style.transform = ""; $("#peek").hidden = true; document.body.classList.remove("zoomies"); $("#paw2").hidden = true; G = null; }
+function endPlay() { cancelAnimationFrame(raf); FX.stop(); cv.style.transform = ""; $("#peek").hidden = true; $("#paw3").hidden = true; document.body.classList.remove("zoomies"); $("#paw2").hidden = true; G = null; }
 
 /* ================= 抓：爪痕＋密密麻麻的小洞 ================= */
 // 「幸福的密集恐懼感」：爪尖沿路打出小圓洞，洞吸附在蜂巢格上，越抓越整齊密集；
@@ -528,7 +533,7 @@ function punchCell(i, j) {
     c.strokeStyle = m.fuzz; c.lineWidth = .9; c.lineCap = "round";
     for (let n = 0; n < 3; n++) { const a = rand(0, 6.3); c.beginPath(); c.moveTo(cx + Math.cos(a) * 3, cy + Math.sin(a) * 3); c.lineTo(cx + Math.cos(a) * 5.5, cy + Math.sin(a) * 5.5); c.stroke(); }
     if (Math.random() < .12) spawnDebris(cx, cy, rand(-1, 1), -1);
-    if (performance.now() - (G.lastTear || 0) > 70) { G.lastTear = performance.now(); FX.tear(); }
+    if (performance.now() - (G.lastTear || 0) > 70) { G.lastTear = performance.now(); FX.tear(); shake(1.6, 120); }
     FX.vibrate(22);
   } else if (matArt(m, "hole")) {
     // 洞的插畫（例如沙發露出棉花、布邊毛邊），每個洞轉個隨機角度
@@ -541,6 +546,7 @@ function punchCell(i, j) {
   track2(cx, cy);
   if (Math.random() < .1) spawnDebris(cx, cy, rand(-1, 1), -1);
   if (h.pHit[p] >= h.pTotal[p] * (m.tough ? .7 : .85)) burstPatch(p, 0);
+  else if (h.pHit[p] >= h.pTotal[p] * (m.tough ? .7 : .85) * .6) G.hot.add(p);
   return true;
 }
 // 沙發布很難抓破：同一格要重複抓好幾次，越快越用力（暴衝時加倍）
@@ -608,7 +614,7 @@ function burstPatch(p, chain) {
   const cx = cells.reduce((a, q) => a + q[0], 0) / cells.length, cy = cells.reduce((a, q) => a + q[1], 0) / cells.length;
   track2(cx, cy);
   for (let i = 0; i < 34; i++) spawnDebris(cx + rand(-24, 24), cy + rand(-24, 24), rand(-1, 1), rand(-1, .3));
-  FX.pop(chain); FX.vibrate(12 + chain * 4);
+  FX.pop(chain); FX.vibrate(12 + chain * 4); shake(2 + Math.min(chain, 5) * .5);
   // 哈士奇拆家：碎一塊就順便把旁邊也扯爛，偶爾嗷嗚一聲（一點點中二）
   if (G.catId === "husky" && chain === 0 && Math.random() < .35) setTimeout(() => { if (!G || G.done) return; const q = neighbors(p).find(x => !h.pDone[x] && h.pTotal[x]); if (q !== undefined) burstPatch(q, 1); }, 90);
   if (G.catId === "husky" && Math.random() < .18 && performance.now() - (G.lastHowl || 0) > 4500) {
@@ -670,7 +676,7 @@ function popNear(x, y) {
       if (Math.random() < .05 && performance.now() - (G.lastBigPop || 0) > 2500) {
         G.lastBigPop = performance.now();
         // 驚喜：特別大的一顆
-        FX.bigPop(); FX.vibrate(35);
+        FX.bigPop(); FX.vibrate(35); shake(3, 220);
         if (performance.now() - (G.lastBig || 0) > 1500) { G.lastBig = performance.now(); bubble(T("啪！"), q.x, q.y - 50); }
       } else { FX.bubblePop(G.catId, G.popSeq); FX.vibrate(6); }
       for (let i = 0; i < 2; i++) spawnDebris(q.x, q.y, rand(-1, 1), -1);
@@ -710,12 +716,13 @@ function spring(x, y) {
   c.stroke(); FX.boing();
   bubble(T("蹦！"), x, y - 40);
 }
-function spawnDebris(x, y, nx, ny) {
+// 碎片往手指移動的方向噴（rain＝抓完的紙屑雨，不跟手指）
+function spawnDebris(x, y, nx, ny, rain) {
   if (G.particles.length > 1500) return;
-  const m = G.m, side = Math.random() < .5 ? -1 : 1, sp = rand(60, 220);
+  const m = G.m, side = Math.random() < .5 ? -1 : 1, sp = rand(60, 220), push = rain ? 0 : rand(120, 320);
   const fluff = m.debris === "fluff", plastic = m.debris === "plastic";
   G.particles.push({
-    x, y, vx: nx * side * sp + rand(-60, 60), vy: ny * side * sp - rand(80, 240), rot: rand(0, 6.3), vr: rand(-8, 8),
+    x, y, vx: nx * side * sp * .6 + rand(-50, 50) + G.mvx * push, vy: ny * side * sp * .6 - rand(80, 240) + G.mvy * push * .6, rot: rand(0, 6.3), vr: rand(-8, 8),
     w: fluff ? rand(4, 8) : plastic ? rand(4, 8) : rand(7, 16), h: fluff ? 0 : plastic ? rand(3, 6) : rand(1.6, 3), fluff, plastic,
     color: fluff ? (Math.random() < .7 ? "#ffffff" : m.fuzz) : plastic ? "rgba(255,255,255,.75)" : (Math.random() < .6 ? m.base2 : m.fuzz),
     floor: Ht - rand(4, G.rainBand)
@@ -785,25 +792,29 @@ function track(prev) {
   const now = performance.now();
   const dt = Math.max(16, now - G.lastT); G.lastT = now;
   G.speed = (G.speed || 0) * .7 + d / dt * .3;
+  if (d > .5) { const vx = (G.paw.x - prev.x) / d, vy = (G.paw.y - prev.y) / d; G.mvx = G.mvx * .7 + vx * .3; G.mvy = G.mvy * .7 + vy * .3; }
   FX.scratch(d / dt);
   if (d > 0.5) { G.scratchMs += Math.min(dt, 60); G.lastMove = now; }
   if (G.zoom === 1 && d > 0.5) claw(prev.x + 46, prev.y + 14, G.paw.x + 46, G.paw.y + 14, -1.8);
   movePaw();
 }
+// 兩根手指：第二根的狀態存在 G.f2，要處理它的時候把欄位對調進 G，處理完再對調回去
+const FKEYS = ["pid", "down", "paw", "stroke", "press", "fx", "fy", "lx", "ly", "jx", "jy", "lastT", "pawEl"];
+function withF2(fn) { const g = G, f = g.f2; const sw = () => { for (const k of FKEYS) { const t = g[k]; g[k] = f[k]; f[k] = t; } }; sw(); try { fn(); } finally { sw(); } }
+const anyDown = () => G.down || G.f2.down;
 function setPaw(out) {
   // 有 AI 畫的貓掌就用（總編、架構師），沒有就用程式畫的
-  const p = $("#paw"), src = ART && ART[G.catId] && ART[G.catId][out ? "pawOut" : "pawIn"];
+  const p = G.pawEl, src = ART && ART[G.catId] && ART[G.catId][out ? "pawOut" : "pawIn"];
   p.innerHTML = src ? `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:contain;object-position:top">` : pawSVG(G.catId, out);
   p.classList.toggle("down", out);
 }
 function movePaw() {
-  const p = $("#paw"); p.style.left = G.paw.x + "px"; p.style.top = G.paw.y + "px";
+  const p = G.pawEl; p.style.left = G.paw.x + "px"; p.style.top = G.paw.y + "px";
+  if (p !== $("#paw")) return;
   const q = $("#paw2"); if (!q.hidden) { q.style.left = G.paw.x + 46 + "px"; q.style.top = G.paw.y + 14 + "px"; }
 }
 
-cv.addEventListener("pointerdown", e => {
-  if (!G || G.done || G.pid !== null) return;
-  e.preventDefault(); FX.unlock();
+function fingerDown(e) {
   G.pid = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch {}
   G.down = true; G.fx = e.clientX; G.fy = e.clientY; G.lx = e.clientX; G.ly = e.clientY;
   G.paw.x = e.clientX; G.paw.y = e.clientY;
@@ -811,16 +822,9 @@ cv.addEventListener("pointerdown", e => {
   G.press = { x: e.clientX, y: e.clientY, t: performance.now(), n: 0, next: 0 };
   G.popSeq = 0;   // 總編：每一筆從低音開始，沿著一排越啵越高
   G.lastT = performance.now();
-  setPaw(true); $("#paw").style.opacity = 1; movePaw();
-  $("#hint").style.opacity = 0;
-});
-cv.addEventListener("pointermove", e => {
-  if (!G || e.pointerId !== G.pid || G.done) return;
-  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-  for (const ev of (evs.length ? evs : [e])) { G.fx = ev.clientX; G.fy = ev.clientY; if (!G.m.tough) onMove(ev.clientX, ev.clientY); }
-});
-const lift = e => {
-  if (!G || e.pointerId !== G.pid) return;
+  G.pawEl.hidden = false; setPaw(true); G.pawEl.style.opacity = 1; movePaw();
+}
+function fingerUp() {
   const s = G.stroke;
   if (s && s.path > 5) {
     const dx = G.paw.x - s.sx, dy = G.paw.y - s.sy, d = Math.hypot(dx, dy);
@@ -828,8 +832,25 @@ const lift = e => {
       bend: Math.min(1, d / s.path),   // 起點到終點的距離÷路徑長：越小越彎
       dir: d > 10 ? Math.round(((Math.atan2(dy, dx) + Math.PI) % Math.PI) / (Math.PI / 4)) % 4 : -1 });
   }
-  G.pid = null; G.down = false; G.stroke = null; G.press = null; FX.quiet();
-  setPaw(false); $("#paw").style.opacity = .85;
+  G.pid = null; G.down = false; G.stroke = null; G.press = null;
+  setPaw(false);
+  if (G.pawEl === $("#paw")) G.pawEl.style.opacity = .85; else G.pawEl.hidden = true;
+}
+cv.addEventListener("pointerdown", e => {
+  if (!G || G.done) return;
+  if (G.pid === null) { e.preventDefault(); FX.unlock(); fingerDown(e); $("#hint").style.opacity = 0; }
+  else if (G.f2.pid === null) { e.preventDefault(); withF2(() => fingerDown(e)); }   // 第二根手指＝第二隻貓掌
+});
+cv.addEventListener("pointermove", e => {
+  if (!G || G.done) return;
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  const run = () => { for (const ev of (evs.length ? evs : [e])) { G.fx = ev.clientX; G.fy = ev.clientY; if (!G.m.tough) onMove(ev.clientX, ev.clientY); } };
+  if (e.pointerId === G.pid) run(); else if (e.pointerId === G.f2.pid) withF2(run);
+});
+const lift = e => {
+  if (!G) return;
+  if (e.pointerId === G.pid) fingerUp(); else if (e.pointerId === G.f2.pid) withF2(fingerUp);
+  if (!anyDown()) FX.quiet();
 };
 cv.addEventListener("pointerup", lift);
 cv.addEventListener("pointercancel", lift);
@@ -837,23 +858,32 @@ cv.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
 
 /* ================= 動畫迴圈 ================= */
 let raf = null, last = 0;
+// 每根手指各自的動作：沙發拖住、架構師／哈士奇慢半拍、長按蓋印章
+function fingerTick(now) {
+  if (G.m.tough && G.catId !== "grey") {
+    // 沙發：爪子勾住布，貓掌被拖住、慢半拍才跟上手指
+    const ox = G.lx, oy = G.ly;
+    G.lx += (G.fx - G.lx) * .3; G.ly += (G.fy - G.ly) * .3;
+    if (Math.hypot(G.lx - ox, G.ly - oy) > .3) onMove(G.lx, G.ly); else FX.scratch(0);
+  }
+  if (G.catId === "grey" || G.catId === "husky") {
+    // 哈士奇：跟得比較快、會甩過頭一點（戲劇性的大弧線）
+    const prev = { x: G.paw.x, y: G.paw.y }, k = G.catId === "husky" ? (G.m.tough ? .26 : .32) : G.m.tough ? .16 : .18;
+    G.paw.x += (G.fx - G.paw.x) * k; G.paw.y += (G.fy - G.paw.y) * k;
+    if (Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y) > .4) { claw(prev.x, prev.y, G.paw.x, G.paw.y); track(prev); }
+    else FX.scratch(0);
+  }
+  // 長按不動：蓋肉球印章，一圈一圈往外蓋滿
+  const pr = G.press;
+  if (pr && now - pr.t > 450 && now > pr.next) { stampAt(pr); pr.next = now + (pr.n < 3 ? 160 : 70); }
+}
 function loop(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (!G) return;
-  if (G.down && !G.done) {
-    if (G.m.tough && G.catId !== "grey") {
-      // 沙發：爪子勾住布，貓掌被拖住、慢半拍才跟上手指
-      const ox = G.lx, oy = G.ly;
-      G.lx += (G.fx - G.lx) * .3; G.ly += (G.fy - G.ly) * .3;
-      if (Math.hypot(G.lx - ox, G.ly - oy) > .3) onMove(G.lx, G.ly); else FX.scratch(0);
-    }
-    if (G.catId === "grey" || G.catId === "husky") {
-      // 哈士奇：跟得比較快、會甩過頭一點（戲劇性的大弧線）
-      const prev = { x: G.paw.x, y: G.paw.y }, k = G.catId === "husky" ? (G.m.tough ? .26 : .32) : G.m.tough ? .16 : .18;
-      G.paw.x += (G.fx - G.paw.x) * k; G.paw.y += (G.fy - G.paw.y) * k;
-      if (Math.hypot(G.paw.x - prev.x, G.paw.y - prev.y) > .4) { claw(prev.x, prev.y, G.paw.x, G.paw.y); track(prev); }
-      else FX.scratch(0);
-    }
+  if (anyDown() && !G.done) {
+    if (G.down) fingerTick(now);
+    if (G && G.f2.down) withF2(() => fingerTick(now));
+    if (!G) return;
     if (G.catId === "white" && now > G.nextBurst) {
       // 暴衝：0.7 秒自己亂抓一大片
       G.burstUntil = now + 700; G.nextBurst = now + rand(7000, 12000);
@@ -867,31 +897,50 @@ function loop(now) {
     // 連續亂抓多久（衛生紙捲的隱藏條件）
     if (now - G.lastMove < 350) G.frenzyRun += dt; else G.frenzyRun = 0;
     save.frenzy = Math.max(save.frenzy, Math.floor(G.frenzyRun));
-    // 長按不動：蓋肉球印章，一圈一圈往外蓋滿
-    const pr = G.press;
-    if (pr && now - pr.t > 450 && now > pr.next) { stampAt(pr); pr.next = now + (pr.n < 3 ? 160 : 70); }
     if (!G.rubbed && G.scratchMs > 8000 && hearts(G.catId) >= 2 && Math.random() < .004) rub();
     if (!G.zoom && ((G.frenzyRun >= 4 && G.progress >= G.zoomP) || G.scratchMs > G.zoomAt)) startZoomies(now);
   }
-  if (G.zoom === 1) {
-    if (now > G.zoomUntil || G.done) endZoomies();
-    else cv.style.transform = `translate(${rand(-3, 3)}px,${rand(-3, 3)}px)`;
-  }
+  if (G.zoom === 1 && (now > G.zoomUntil || G.done)) endZoomies();
+  // 畫面晃：暴衝時一直晃；碎掉／裂開時輕輕晃一下（不靠震動也感覺得到）
+  const amp = G.zoom === 1 ? 3 : now < G.shakeUntil ? G.shakeAmp * (G.shakeUntil - now) / 180 : 0;
+  cv.style.transform = amp > .2 ? `translate(${rand(-amp, amp)}px,${rand(-amp, amp)}px)` : "";
   if (now < G.rainUntil) {
     // 抓完：紙屑雨，堆得越來越高
-    for (let i = 0; i < 22; i++) { spawnDebris(rand(0, Wd), rand(-40, Ht * .3), rand(-.3, .3), 1); const p = G.particles[G.particles.length - 1]; if (p) { p.vy = rand(100, 400); } }
+    for (let i = 0; i < 22; i++) { spawnDebris(rand(0, Wd), rand(-40, Ht * .3), rand(-.3, .3), 1, true); const p = G.particles[G.particles.length - 1]; if (p) { p.vy = rand(100, 400); } }
   }
   updateParticles(dt);
   if (G.sparks && !G.found && !G.done && Math.random() < .25) { const P = G.pic; G.sparks.push({ x: P.x + rand(0, P.s), y: P.y + rand(0, P.s), t: 0 }); }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(base, 0, 0); ctx.drawImage(dmg, 0, 0); ctx.drawImage(pile, 0, 0);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (!G.done) drawHot(now);
   for (const p of G.particles) drawParticle(ctx, p);
   if (G.sparks) drawSparks(dt);
-  if (G.m.tough && G.down && !G.done) drawPull();
+  if (G.m.tough && !G.done) { if (G.down) drawPull(); if (G.f2.down) withF2(drawPull); }
   updateMeter();
   if (!G.done && G.progress >= 1) finish();
   raf = requestAnimationFrame(loop);
+}
+// 輕輕晃一下畫面
+function shake(amp, ms = 180) {
+  const now = performance.now(), cur = now < G.shakeUntil ? G.shakeAmp * (G.shakeUntil - now) / 180 : 0;
+  if (amp >= cur) { G.shakeAmp = amp; G.shakeUntil = now + ms; }
+}
+// 快破的區塊：紙面微微鼓起（亮邊＋底下陰影，越接近碎越鼓、輕輕起伏）
+function drawHot(now) {
+  const h = G.hx; if (!h || !G.hot.size) return;
+  const pc = h.pc, need = G.m.tough ? .7 : .85;
+  for (const p of G.hot) {
+    if (h.pDone[p]) { G.hot.delete(p); continue; }
+    const r = h.pHit[p] / (h.pTotal[p] * need), k = clamp((r - .6) / .4, 0, 1); if (k <= 0) continue;
+    const pi = p % pc, pj = Math.floor(p / pc), x = pi * PX * HEX - HEX / 2, y = Y0 + pj * PATCH * ROWH - ROWH / 2, w = PX * HEX, hh = PATCH * ROWH;
+    const pulse = 1 + Math.sin(now / 160 + p) * .3 * k, lift = 3.5 * k * pulse;
+    ctx.save(); ctx.translate(x + w / 2, y + hh / 2); ctx.scale(1 + .02 * k * pulse, 1 + .02 * k * pulse);
+    ctx.fillStyle = `rgba(0,0,0,${.2 * k})`; roundRect(ctx, -w / 2 + 1, -hh / 2 + lift + 1, w, hh, 6); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${.28 * k})`; roundRect(ctx, -w / 2, -hh / 2 - lift, w, hh, 6); ctx.fill();
+    ctx.strokeStyle = `rgba(255,255,255,${.5 * k})`; ctx.lineWidth = 1.5; roundRect(ctx, -w / 2, -hh / 2 - lift, w, hh, 6); ctx.stroke();
+    ctx.restore();
+  }
 }
 // 布被爪子勾住往手指方向拉：貓掌四周畫出放射狀的拉扯皺褶，放開就彈回去（不畫）
 function drawPull() {
@@ -972,7 +1021,7 @@ function heartStamp(pr) {
 // 一整排都碎光：像消掉一排一樣大慶祝
 function rowClear(y, hgt) {
   G.rows++;
-  const now = performance.now();
+  const now = performance.now(); shake(4, 260);
   for (let i = 0; i < 70; i++) G.particles.push({ x: rand(0, Wd), y: y + rand(-hgt / 2, hgt / 2), vx: rand(-120, 120), vy: rand(-520, -200), rot: rand(0, 6.3), vr: rand(-10, 10),
     w: rand(6, 11), h: rand(3, 6), color: ["#ffd96a", "#ffb8c6", "#a9e5c6", "#aed5ff", "#ffffff"][i % 5], floor: Ht - rand(4, G.rainBand) });
   const f = document.createElement("div"); f.className = "rowflash"; f.style.top = (y - hgt / 2) + "px"; f.style.height = hgt + "px";
@@ -1046,7 +1095,7 @@ function artStyle(sec, done) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 function finish() {
-  G.done = true; G.down = false; G.pid = null; FX.quiet();
+  G.done = true; G.down = false; G.pid = null; G.f2.down = false; G.f2.pid = null; $("#paw3").hidden = true; FX.quiet();
   if (G.zoom === 1) endZoomies();
   $("#paw").style.opacity = 0;
   const sec = Math.max(1, Math.round((performance.now() - G.start) / 1000));
@@ -1271,20 +1320,132 @@ function pickCat(cd) {
   $("#pickCats").onclick = e => { const b = e.target.closest(".cat"); if (!b) return; $("#pickPop").hidden = true; gift(cd, b.dataset.id); };
 }
 $("#pickClose").addEventListener("click", () => { $("#pickPop").hidden = true; FX.tap(); });
-// 送寶物給貓：收到的那隻站中間；最愛的有專屬反應；貓跳台爬上去跳；高級貓窩……三隻都不理，跑去鑽紙箱
+// 送寶物給貓：貓真的會做的事（拍飛、抱住踢、推下桌、埋頭吃、爬貓跳台、聞一聞轉身）；跳舞只留給滿 5 顆心這種大場面
 function gift(cd, id) {
   save.bag[cd.id]--; FX.tap();
-  const name = W(cd.name), c = W(CATS[id].name);
   const fav = cd.like === CATS[id].like, pts = cd.like === "none" ? LOVE.none : fav ? LOVE.fav : cd.like === "all" ? LOVE.all : LOVE.gift;
   const up = addLove(id, pts);
-  let p;
-  if (cd.id === "catbed") p = dance(T("送了高級貓窩……三隻全跑去鑽紙箱了"), { pose: "tail", img: cardImg(cd.id), music: false });
-  else if (cd.id === "cattree") p = dance(T("三隻爬上貓跳台跳舞！"), { bg: cardImg(cd.id), star: id });
-  else if (fav) p = dance(`💕 ${T(FAV_LINE[id], name)}`, { img: cardImg(cd.id), star: id });
-  else p = dance(T("{0}收到{1}，好開心！", c, name), { img: cardImg(cd.id), star: id });
-  if (up) p = p.then(() => heartPop(id, up));
-  p.then(() => { checkHusky(); renderBag(); openBook(); });
+  react(cd, id, fav).then(() => {
+    if (up >= 5) return dance(T("{0}滿 5 顆心了！", W(CATS[id].name)), { star: id }).then(() => heartPop(id, up));
+    if (up) return heartPop(id, up);
+  }).then(() => { checkHusky(); renderBag(); openBook(); });
 }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function react(cd, id, fav) {
+  const R = $("#react"), stage = R.querySelector(".stage"), cat = R.querySelector(".rcat"), g = R.querySelector(".rgift"), cap = R.querySelector("p");
+  const kind = cd.like === "none" ? "none" : cd.id === "kibble" ? "kibble" : cd.id === "cattree" ? "cattree" : cd.like === "all" ? "kibble" : cd.like;
+  const sit = catImg(id, "sit", "rpic");
+  cat.innerHTML = sit; g.src = cardImg(cd.id);
+  stage.className = "stage k-" + kind; stage.style.backgroundImage = kind === "cattree" ? `url(${cardImg(cd.id)})` : "";
+  g.hidden = kind === "cattree";
+  for (const el of [cat, g]) { el.getAnimations().forEach(a => a.cancel()); el.style.transform = ""; el.style.left = ""; el.style.bottom = ""; }
+  cap.textContent = ""; R.querySelector(".hint").hidden = true; R.querySelector("#reactOk").hidden = true;
+  R.hidden = false;
+  const SW = stage.clientWidth, name = W(cd.name), cname = W(CATS[id].name);
+  const A = (el, kf, ms, easing = "ease-in-out") => el.animate(kf, { duration: ms, easing, fill: "forwards" }).finished;
+  const tf = (x, y, r = 0, s = 1) => ({ transform: `translate(${x}px,${y}px) rotate(${r}deg) scale(${s})` });
+  let skip = false;
+  const run = (async () => {
+    await wait(300);
+    if (kind === "toss") {
+      // 一掌拍飛 → 追過去 → 再拍回來
+      const far = SW - 230;
+      await Promise.all([A(cat, [tf(0, 0), tf(10, 0, -14), tf(0, 0)], 260), (async () => { await wait(120); FX.boing(); await A(g, [tf(0, 0), tf(far * .6, -120, 400), tf(far, 0, 720)], 700, "ease-out"); })()]);
+      await A(cat, [tf(0, 0), tf(far * .5, -24), tf(far - 20, 0)], 650);
+      FX.boing();
+      await Promise.all([A(cat, [tf(far - 20, 0), tf(far - 10, 0, 14), tf(far - 20, 0)], 260), A(g, [tf(far, 0, 720), tf(far * .4, -110, 360), tf(0, 0, 0)], 700, "ease-out")]);
+      await A(cat, [tf(far - 20, 0, 0, 1), tf(far * .4, -20, 0, -1), tf(0, 0, 0, 1)], 650);
+    } else if (kind === "soft") {
+      // 抱住 → 在地上滾 → 後腳狂踢
+      await A(g, [tf(0, 0), tf(-70, -30, -20)], 450);
+      for (let i = 0; i < 2; i++) await Promise.all([A(cat, [tf(0, 0), tf(60, 10, 180), tf(0, 0, 360)], 700), A(g, [tf(-70, -30, -20), tf(-10, -20, 160), tf(-70, -30, 340)], 700)]);
+      FX.purr(1.4);
+      const kick = []; for (let i = 0; i < 10; i++) kick.push(tf(0, 0, i % 2 ? 10 : -10, 1));
+      await Promise.all([A(cat, kick, 900, "linear"), A(g, kick.map((k, i) => tf(-70 + (i % 2 ? 6 : -6), -30, -20)), 900, "linear")]);
+    } else if (kind === "small") {
+      // 慢慢推到桌邊 → 回頭看你一眼 → 推下去
+      const edge = SW - 200;
+      for (const x of [edge * .35, edge * .7, edge]) { await Promise.all([A(cat, [tf(x - edge * .35, 0), tf(x - 20, 0)], 600), A(g, [tf(x - edge * .35, 0), tf(x, 0)], 600)]); FX.tap(); await wait(200); }
+      bubbleIn(stage, "……", edge, 170); await A(cat, [tf(edge - 20, 0), tf(edge - 20, -8, 0, 1.08), tf(edge - 20, 0)], 900); await wait(300);
+      await A(cat, [tf(edge - 20, 0), tf(edge, 0, 8), tf(edge - 20, 0)], 280);
+      await A(g, [tf(edge, 0), tf(edge + 40, 30, 60), tf(edge + 60, 230, 220)], 700, "ease-in"); FX.plop();
+    } else if (kind === "kibble") {
+      // 埋頭吃，喀滋喀滋
+      await A(cat, [tf(0, 0), tf(60, 0)], 500);
+      const bob = []; for (let i = 0; i < 12; i++) bob.push(tf(60, i % 2 ? 8 : 0, i % 2 ? 6 : 0));
+      const munch = setInterval(() => FX.tap(), 260);
+      await A(cat, bob, 2400, "linear"); clearInterval(munch);
+    } else if (kind === "cattree") {
+      // 一層一層爬上去
+      let px = 0, py = 0, ps = 1;
+      for (const [x, y] of [[40, -70], [90, -150], [60, -230]]) { await A(cat, [tf(px, py, 0, ps), tf((px + x) / 2, y - 30, 0, .9), tf(x, y, 0, .85)], 550, "ease-out"); px = x; py = y; ps = .85; FX.tap(); await wait(150); }
+    } else {
+      // 聞一聞 → 轉身背對你
+      await A(cat, [tf(0, 0), tf(70, 0)], 600);
+      for (let i = 0; i < 2; i++) { await A(cat, [tf(70, 0), tf(80, 6, 6), tf(70, 0)], 380); }
+      await wait(300);
+      cat.innerHTML = ART && ART[id] && ART[id].back ? `<img class="rpic" src="${ART[id].back}" alt="">` : sit;
+      if (!(ART && ART[id] && ART[id].back)) cat.style.transform = "scaleX(-1)";
+      FX.sad();
+      await A(cat, [tf(70, 0), tf(70, 0, 3), tf(70, 0, -3), tf(70, 0)], 1200);
+    }
+  })();
+  cap.textContent = (fav ? `💕 ${T("最愛的！")}` : "") + T(REACT_LINE[kind], cname, name);
+  if (fav) hearts3(stage);
+  return new Promise(res => {
+    const done = () => { R.hidden = true; R.onclick = null; flingOff(); res(); };
+    const ok = R.querySelector("#reactOk"); ok.onclick = e => { e.stopPropagation(); FX.tap(); done(); };
+    run.then(() => {
+      if (R.hidden) return;
+      ok.hidden = false;
+      // 加分：把禮物丟出去，貓追著撲（貓跳台和不愛的不用）
+      if (kind === "toss" || kind === "soft" || kind === "kibble") { R.querySelector(".hint").hidden = false; flingOn(stage, cat, g, id); }
+    });
+  });
+}
+function hearts3(stage) {
+  for (let i = 0; i < 8; i++) { const h = document.createElement("span"); h.className = "fh"; h.textContent = "💕"; h.style.left = rand(10, 90) + "%"; h.style.animationDelay = rand(0, 1.2) + "s"; stage.appendChild(h); setTimeout(() => h.remove(), 3200); }
+}
+function bubbleIn(stage, text, x, y) { const b = document.createElement("div"); b.className = "bubble"; b.textContent = text; b.style.position = "absolute"; b.style.left = x + "px"; b.style.bottom = y + "px"; stage.appendChild(b); setTimeout(() => b.remove(), 950); }
+// 用手指把禮物丟出去：放開時的速度決定飛多遠，貓追過去撲
+let fling = null;
+function flingOn(stage, cat, g, id) {
+  const S = stage.getBoundingClientRect();
+  const pos = el => { const r = el.getBoundingClientRect(); return { x: r.left - S.left, y: S.bottom - r.bottom, w: r.width, h: r.height }; };
+  for (const el of [cat, g]) { const q = pos(el); el.getAnimations().forEach(a => a.cancel()); el.style.transform = el === cat && cat.style.transform === "scaleX(-1)" ? "scaleX(-1)" : ""; el.style.left = q.x + "px"; el.style.bottom = q.y + "px"; }
+  const F = fling = { stage, cat, g, x: pos(g).x, y: pos(g).y, vx: 0, vy: 0, cx: pos(cat).x, drag: false, hist: [], hits: 0, raf: 0, airborne: false, pounce: 0 };
+  const floor = 0, SW = S.width;
+  g.onpointerdown = e => { e.preventDefault(); e.stopPropagation(); F.drag = true; F.hist = []; try { g.setPointerCapture(e.pointerId); } catch {} };
+  g.onpointermove = e => { if (!F.drag) return; const r = stage.getBoundingClientRect(); F.x = clamp(e.clientX - r.left - 30, 0, SW - 60); F.y = clamp(r.bottom - e.clientY - 30, 0, r.height - 60); F.hist.push([performance.now(), F.x, F.y]); if (F.hist.length > 6) F.hist.shift(); F.vx = F.vy = 0; };
+  g.onpointerup = g.onpointercancel = () => {
+    if (!F.drag) return; F.drag = false;
+    const h = F.hist; if (h.length >= 2) { const a = h[0], b = h[h.length - 1], dt = Math.max(16, b[0] - a[0]) / 1000; F.vx = (b[1] - a[1]) / dt; F.vy = (b[2] - a[2]) / dt; }
+    F.airborne = true; FX.tap();
+  };
+  let last = performance.now();
+  const tick = now => {
+    const dt = Math.min(.04, (now - last) / 1000); last = now;
+    if (!F.drag) {
+      F.vy -= 1400 * dt; F.x += F.vx * dt; F.y += F.vy * dt;
+      if (F.x < 0) { F.x = 0; F.vx = -F.vx * .6; } if (F.x > SW - 60) { F.x = SW - 60; F.vx = -F.vx * .6; }
+      if (F.y < floor) { F.y = floor; if (Math.abs(F.vy) > 120) { F.vy = -F.vy * .45; FX.tap(); } else F.vy = 0; F.vx *= .9; }
+    }
+    // 貓追著禮物跑，靠近時撲上去
+    const target = F.x - 40, speed = 380;
+    if (now > F.pounce) {
+      F.cx += clamp(target - F.cx, -speed * dt, speed * dt);
+      if (Math.abs(target - F.cx) < 14 && F.y < 30 && F.airborne && !F.drag) {
+        F.airborne = false; F.hits++; F.pounce = now + 700; FX.boing();
+        F.cat.animate([{ transform: "translateY(0)" }, { transform: "translateY(-60px) rotate(-12deg)" }, { transform: "translateY(0)" }], { duration: 500, easing: "ease-out" });
+        F.stage.querySelector(".fcount").textContent = T("撲到了！×{0}", F.hits);
+      }
+    }
+    F.cat.style.left = F.cx + "px"; F.g.style.left = F.x + "px"; F.g.style.bottom = F.y + "px";
+    F.raf = requestAnimationFrame(tick);
+  };
+  F.raf = requestAnimationFrame(tick);
+}
+function flingOff() { if (!fling) return; cancelAnimationFrame(fling.raf); fling.g.onpointerdown = fling.g.onpointermove = fling.g.onpointerup = fling.g.onpointercancel = null; fling.stage.querySelector(".fcount").textContent = ""; fling = null; }
 $("#bookBtn").addEventListener("click", () => { FX.tap(); openBook(); });
 $("#bookBtn2").addEventListener("click", () => { FX.tap(); openBook(); });
 $("#bookBack").addEventListener("click", () => { FX.tap(); show("home"); renderHome(); });

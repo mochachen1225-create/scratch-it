@@ -84,9 +84,9 @@ const STYLE_NOTES = {
 
 // AI 插畫（摩卡與貓貓小隊 用 Gemini App 生成）。window.NO_ART = true 時全部改用程式畫的版本
 const ART = window.NO_ART ? null : {
-  orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", tail: "art/orange_tail.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp" },
-  grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp", pawOut: "art/grey_paw_out.webp", pawIn: "art/grey_paw_in.webp" },
-  white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp", pawOut: "art/white_paw_out.webp", pawIn: "art/white_paw_in.webp" },
+  orange: { sit: "art/orange_sit.webp", lie: "art/orange_lie.webp", box: "art/orange_box.webp", tail: "art/orange_tail.webp", pawOut: "art/orange_paw_out.webp", pawIn: "art/orange_paw_in.webp", back: "art/orange_back.webp" },
+  grey: { sit: "art/grey_sit.webp", lie: "art/grey_lie.webp", box: "art/grey_box.webp", tail: "art/grey_tail.webp", pawOut: "art/grey_paw_out.webp", pawIn: "art/grey_paw_in.webp", back: "art/grey_back.webp" },
+  white: { sit: "art/white_sit.webp", lie: "art/white_lie.webp", box: "art/white_box.webp", tail: "art/white_tail.webp", pawOut: "art/white_paw_out.webp", pawIn: "art/white_paw_in.webp", back: "art/white_back.webp" },
   // 哈士奇收爪的掌還沒到，先兩個狀態都用伸爪那張
   husky: { sit: "art/husky_sit.webp", lie: "art/husky_lie.webp", box: "art/husky_box.webp", tail: "art/husky_box.webp", pawOut: "art/husky_paw_out.webp", pawIn: "art/husky_paw_out.webp" },
   peek: { orange: "art/orange_peek.webp", white: "art/white_peek.webp" },
@@ -147,6 +147,15 @@ const GIFT_BACK = {
   orange: { id: "gift_orange", name: "總編的眼鏡布", say: "總編把擦眼鏡的布送給你了（上面還有一根橘毛）" },
   grey: { id: "gift_grey", name: "架構師的耳麥", say: "架構師把耳麥借你戴，說可以聽到呼嚕聲" },
   white: { id: "gift_white", name: "小弟的黃帽", say: "小弟把最愛的黃帽送你了（帽沿有咬過的痕跡）" }
+};
+// 收到禮物：貓真的會做的事（依禮物種類）；{0}＝貓、{1}＝禮物
+const REACT_LINE = {
+  toss: "{0}一掌把{1}拍飛，追過去，再拍回來！",
+  soft: "{0}抱住{1}在地上滾來滾去，後腳狂踢",
+  small: "{0}把{1}慢慢推到桌邊……看了你一眼……推下去",
+  kibble: "{0}把頭埋進{1}，喀滋喀滋",
+  cattree: "{0}一層一層爬上貓跳台，在最上面窩好",
+  none: "{0}聞了聞{1}……轉身背對你"
 };
 // 送到最愛的禮物：專屬反應
 const FAV_LINE = { orange: "總編叼走{0}，收進紙箱排得整整齊齊", grey: "架構師抱著{0}蹭臉，捨不得放", white: "小弟把{0}打飛又追回來，再打飛！" };

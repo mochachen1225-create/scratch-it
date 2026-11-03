@@ -59,7 +59,9 @@ const FX = {
     const t = this.ctx.currentTime, v = Math.min(1, speed / 1.6) * this.mat.sound.gain;
     this.scratchGain.gain.setTargetAtTime(v, t, 0.03);
     this.filter.frequency.setTargetAtTime(this.mat.sound.freq * (0.8 + Math.min(0.6, speed / 4)), t, 0.05);
-    if (this.mat.sound.crackle && Math.random() < this.mat.sound.crackle * Math.min(1, speed)) this.click(0.05 + Math.random() * 0.05);
+    // 越快越密越響：紙纖維斷掉的小喀啦聲跟著速度變多（沙發是悶悶的、泡泡紙靠每顆啵聲）
+    const cr = this.mat.sound.crackle || (this.mat.mode === "bubble" ? 0 : .18);
+    if (cr && Math.random() < cr * Math.min(1.6, speed)) this.click((0.04 + Math.random() * 0.05) * (0.7 + Math.min(1, speed / 2)));
   },
   quiet() { if (this.scratchGain) this.scratchGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05); },
   burst(dur, f0, f1, vol, type = "bandpass") {
