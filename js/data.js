@@ -140,7 +140,7 @@ const cardImg = id => ART ? `art/cards/${id}.webp` : null;
 
 // 好感度：只會越來越愛。內部點數，玩家只看到愛心；前面超快、後面慢慢來
 const HEART_AT = [3, 8, 18, 45, 90];
-const LOVE = { paint: 3, found: 1, gift: 6, all: 10, fav: 12, none: 1 };
+const LOVE = { paint: 3, found: 1, clean: 2, gift: 6, all: 10, fav: 12, none: 1 };
 const HEART_TEXT = ["", "會在首頁對你眨眼了", "抓畫的時候會跑來蹭你", "學會招牌舞步了", "會睡在「開始抓」旁邊", "送你一份回禮！"];
 // ❤️5 回禮卡
 const GIFT_BACK = {

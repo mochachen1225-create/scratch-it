@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.7.3";
+const VERSION = "0.7.4";
 const CHANGES = [
+  "找到驚喜插畫後可以「收下，結束」；想全部刮乾淨的人繼續抓，抓乾淨才會自動結束（感謝玩家回報）",
   "抓完的呼嚕動畫可以跳過，直接看圖卡（感謝玩家回報）",
   "小弟收到喜歡的禮物會開心到 Z 字型爆衝",
   "送高級貓窩時，貓窩變成大大一張放在貓旁邊（感謝玩家回報）",
@@ -315,7 +316,7 @@ function startGame() {
   paintBase(m);
   setPaw(false); $("#paw").style.opacity = .85; G.paw.x = Wd / 2; G.paw.y = Ht * .62; movePaw();
   $("#catChip").innerHTML = `${catImg(save.cat, "sit", "chippic")}<span>${W(cat.name)}</span>`;
-  $("#doneBtn").disabled = true; $("#finish").hidden = true; $("#hint").style.opacity = 1;
+  $("#doneBtn").disabled = true; $("#doneBtn").textContent = T("抓夠了 👌"); $("#doneBtn").classList.remove("take"); $("#finish").hidden = true; $("#hint").style.opacity = 1;
   updateMeter();
   FX.start(m);
   G.track = G.catId === "white" || m.id === "bubble" ? "busy" : "calm";
@@ -348,7 +349,8 @@ function setupHoles() {
     dmg: new Float32Array(cols * rows), last: new Float32Array(cols * rows) };   // 沙發：每格的破壞程度、上次被抓的時間
   for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
     const [x, y] = hexPos(i, j);
-    if (x > 6 && x < Wd - 6 && y > 6 && y < Ht - 6) { h.pTotal[patchOf(i, j)]++; h.total++; } else h.punched[j * cols + i] = 2;   // 2 = 邊框外
+    // 2 = 邊框外；最上面被按鈕列擋住的那條也不算（手指點下去會按到按鈕，不然永遠抓不乾淨）
+    if (x > 6 && x < Wd - 6 && y > 58 && y < Ht - 6) { h.pTotal[patchOf(i, j)]++; h.total++; } else h.punched[j * cols + i] = 2;
   }
   // 哪些區塊在驚喜插畫上：碎掉的比例決定「找到了沒」
   h.inPic = new Uint8Array(pc * pr); const P = G.pic;
@@ -441,6 +443,8 @@ function checkReveal() {
   el.hidden = false; el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
   clearTimeout(el._t); el._t = setTimeout(() => { el.hidden = true; }, 2800);
   FX.reveal(cd.rarity); FX.vibrate([20, 40, 20]);
+  // 找到了：可以收下就走，也可以繼續抓到全部乾淨
+  const db = $("#doneBtn"); db.disabled = false; db.textContent = T("收下，結束 ›"); db.classList.add("take");
   // 整人卡：噗一聲、畫面抖一下
   if (cd.kind === "prank") {
     setTimeout(() => { FX.pfft(); FX.vibrate([60, 30, 90]); cv.classList.add("shake"); setTimeout(() => cv.classList.remove("shake"), 500); }, 350);
@@ -494,7 +498,7 @@ function setupBubbles() {
       grid.get(k).push(list.length); list.push({ x, y, r, j, inPic, popped: false });
       rowLeft[j] = (rowLeft[j] || 0) + 1; rowTot[j] = rowLeft[j];
     }
-  G.bub = { r, gap, list, grid, rowLeft, rowTot, rowDone, total: list.length };
+  G.bub = { r, gap, list, grid, rowLeft, rowTot, rowDone, total: list.filter(q => q.y > 58).length };   // 按鈕列下面那排不算
 }
 // 畫名用的統計：洞在左／右半邊、在邊邊、暴衝時打的
 function holeAt(x, y) {
@@ -548,8 +552,10 @@ function punchCell(i, j) {
   }
   track2(cx, cy);
   if (Math.random() < .1) spawnDebris(cx, cy, rand(-1, 1), -1);
-  if (h.pHit[p] >= h.pTotal[p] * (m.tough ? .7 : .85)) burstPatch(p, 0);
-  else if (h.pHit[p] >= h.pTotal[p] * (m.tough ? .7 : .85) * .6) G.hot.add(p);
+  // 抓到六成以後，剩下的區塊比較容易碎（收尾不用一格一格磨）
+  const need = (m.tough ? .7 : .85) * (G.holes / h.total >= .6 ? .7 : 1);
+  if (h.pHit[p] >= h.pTotal[p] * need) burstPatch(p, 0);
+  else if (h.pHit[p] >= h.pTotal[p] * need * .6) G.hot.add(p);
   return true;
 }
 // 沙發布很難抓破：同一格要重複抓好幾次，越快越用力（暴衝時加倍）
@@ -901,7 +907,7 @@ function loop(now) {
     if (now - G.lastMove < 350) G.frenzyRun += dt; else G.frenzyRun = 0;
     save.frenzy = Math.max(save.frenzy, Math.floor(G.frenzyRun));
     if (!G.rubbed && G.scratchMs > 8000 && hearts(G.catId) >= 2 && Math.random() < .004) rub();
-    if (!G.zoom && ((G.frenzyRun >= 4 && G.progress >= G.zoomP) || G.scratchMs > G.zoomAt)) startZoomies(now);
+    if (!G.zoom && ((G.frenzyRun >= 4 && coverage() >= G.zoomP * .4) || G.scratchMs > G.zoomAt)) startZoomies(now);
   }
   if (G.zoom === 1 && (now > G.zoomUntil || G.done)) endZoomies();
   // 畫面晃：暴衝時一直晃；碎掉／裂開時輕輕晃一下（不靠震動也感覺得到）
@@ -921,7 +927,17 @@ function loop(now) {
   if (G.sparks) drawSparks(dt);
   if (G.m.tough && !G.done) { if (G.down) drawPull(); if (G.f2.down) withF2(drawPull); }
   updateMeter();
-  if (!G.done && G.progress >= 1) finish();
+  if (!G.done && !G.wipe && G.progress >= 1) {
+    G.clean = true; G.wipe = now; FX.sweep(); shake(4, 300);
+    bubble(T("抓得一乾二淨！"), Wd / 2 - 80, Ht * .4).classList.add("big");
+  }
+  if (G.wipe && !G.done) {
+    // 剩下的從左到右一口氣掃掉，露出整張插畫
+    const t = clamp((now - G.wipe) / 700, 0, 1), x = Wd * t;
+    dctx.save(); dctx.beginPath(); dctx.rect(0, 0, x, Ht); dctx.clip(); dctx.drawImage(G.under, 0, 0, Wd, Ht); dctx.restore();
+    for (let i = 0; i < 6; i++) spawnDebris(x + rand(-10, 10), rand(0, Ht), 1, rand(-1, 1), true);
+    if (t >= 1) finish();
+  }
   raf = requestAnimationFrame(loop);
 }
 // 輕輕晃一下畫面
@@ -972,12 +988,14 @@ function sneeze() {
   for (let i = 0; i < 40; i++) G.particles.push({ x: rand(0, Wd), y: Ht - rand(4, 40), vx: rand(-200, 200), vy: rand(-650, -350), rot: rand(0, 6), vr: rand(-10, 10),
     w: rand(4, 10), h: rand(2, 4), fluff: G.m.debris === "fluff", color: G.m.debris === "fluff" ? "#fff" : G.m.base2, floor: Ht - rand(4, G.rainBand) });
 }
+// 刮刮樂兩種玩法都支援：找到卡就可以「收下，結束」；想全部刮乾淨的人繼續抓，抓到八成就「一乾二淨」：剩下的一口氣掃掉、整張圖露出來，自動結束
+const CLEAN = .8;
 function updateMeter() {
   if (!G) return;
-  G.progress = clamp(coverage() / .5 * G.cat.speed * (G.m.ease || 1), 0, 1);
+  G.progress = clamp(coverage() / CLEAN, 0, 1);
   $("#meterFill").style.width = G.progress * 100 + "%";
   $("#meterTxt").textContent = T("抓爛度 {0}%", Math.floor(G.progress * 100));
-  $("#doneBtn").disabled = G.progress < .15;
+  $("#doneBtn").disabled = !G.found && coverage() < .06;
 }
 
 /* ================= 好玩：肉球印章、整排清光、暴衝時間 ================= */
@@ -1117,7 +1135,8 @@ function finish() {
   save.maxHoles = Math.max(save.maxHoles, G.holes);
   save.totalHoles += G.holes;
   const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(sec, !!G.pressedDone), no: save.no, holes: G.holes, chain: G.bestChain || 0, zoom: G.zoom ? 1 : 0, rows: G.rows, stamps: G.stamps,
-    card: G.card ? G.card.id : null, found: G.found };
+    card: G.card ? G.card.id : null, found: G.found, clean: !!G.clean };
+  if (G.clean) save.cleans = (save.cleans || 0) + 1;
   // 刮刮卡：找到就收進收集冊，寶物放進寶物袋
   let firstFind = false, complete = false;
   if (G.found) {
@@ -1127,7 +1146,7 @@ function finish() {
     if (!save.reward && PIC_CARDS.every(cd => save.found[cd.id])) { save.reward = true; complete = true; }
   }
   const fresh = checkUnlocks();
-  const loveUp = MAIN_CATS.includes(G.catId) ? addLove(G.catId, LOVE.paint + (G.found ? LOVE.found : 0)) : 0;
+  const loveUp = MAIN_CATS.includes(G.catId) ? addLove(G.catId, LOVE.paint + (G.found ? LOVE.found : 0) + (G.clean ? LOVE.clean : 0)) : 0;
   save.styles = save.styles || {}; info.newStyle = !save.styles[info.style]; save.styles[info.style] = (save.styles[info.style] || 0) + 1;
   G.rainBand = Ht * .3; G.rainUntil = performance.now() + 1100;
   // 抓完的動畫可以跳過（點「跳過」或畫面任何地方）：呼嚕聲淡出、直接到圖卡
@@ -1547,7 +1566,7 @@ async function buildCard(info) {
     // 沒找到也告訴你錯過了多稀有的卡，讓人想再抓一張
     x.fillText(info.found ? `🎁 ${T("找到：{0}", W(cd.name))} ${RARITY[cd.rarity].stars}` : `❓ ${T("差一點！下面藏著一張{0}卡 {1}", T(RARITY[cd.rarity].name), RARITY[cd.rarity].stars)}`, 272, 1200, 760);
   }
-  const extra = [info.chain >= 3 && T("最長連鎖 ×{0}", info.chain), info.rows && T("清光 {0} 排", info.rows), info.zoom && T("暴衝 ×{0}", info.zoom), info.stamps >= 5 && T("肉球章 ×{0}", info.stamps)].filter(Boolean);
+  const extra = [info.clean && T("一乾二淨 ✨"), info.chain >= 3 && T("最長連鎖 ×{0}", info.chain), info.rows && T("清光 {0} 排", info.rows), info.zoom && T("暴衝 ×{0}", info.zoom), info.stamps >= 5 && T("肉球章 ×{0}", info.stamps)].filter(Boolean);
   if (extra.length) { x.fillStyle = "#c06a3a"; x.fillText(extra.join("・"), 272, 1244, 760); }
   x.textAlign = "center"; x.fillStyle = "#3a2e2a"; x.font = F(32, true); x.fillText(T("抓爛它！"), W0 / 2, 1294);
   x.font = F(26); x.fillStyle = "#4a7fc0"; x.fillText(GAME_URL, W0 / 2, 1328);
