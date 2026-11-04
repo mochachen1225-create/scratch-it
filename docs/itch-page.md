@@ -1,6 +1,6 @@
 # 《抓爛它！ Scratch It!》上架資料
 
-上架前請再看一次 itch.io 編輯頁的實際欄位：平台規定會變，這份是 2026/11 整理的。署名一律寫「摩卡與貓貓小隊」。
+上架前請再看一次 itch.io 編輯頁的實際欄位：平台規定會變，這份是 2026/11 整理的。署名：中文「摩卡與貓貓小隊」／英文「Mocha & the Cat Hero Party」。
 
 ## 基本資料
 
@@ -17,11 +17,15 @@
 | Tags | cats, cozy, relaxing, satisfying, asmr, mobile, cute, touch, short, collection |
 | Languages | English, Chinese (Traditional) |
 | Inputs | Touchscreen, Mouse |
-| Accessibility | 不計時、不比分數；可以隨時「抓夠了」結束；有靜音鍵 |
+| Accessibility | 只勾編輯頁清單裡「真的符合」的項目（清單以 itch 當下為準，沒有符合的就留空）。遊戲事實：不計時、不比分數、不會輸；可以隨時「抓夠了」結束；有靜音鍵；單指就能玩 |
+| Visibility | 先存 **Draft**，自己用手機開過、確認能玩，再改 **Public** |
+| Community | 開 **Comments**（收玩家回饋）；不開討論版 |
+| Links | 不填 |
+| Made with | 不填（沒有用遊戲引擎） |
 
 ## 上傳與嵌入（itch）
 
-1. 在 Mac 上執行打包：`./tools/package.sh`（itch 網址已內建），產出 `dist/scratch-it-itch-<版本>.zip`（約 7MB）
+1. 在 Mac 上執行打包：`./tools/package.sh`（itch 網址已內建），產出 `dist/scratch-it-itch-<版本>.zip`（約 7MB；目前是 `scratch-it-itch-0.8.14.zip`，鎖版後有 bugfix 版號照實）
 2. Uploads：上傳這個 zip，勾 **This file will be played in the browser**
 3. Embed options：
    - Viewport dimensions：**420 × 860**
@@ -41,6 +45,13 @@
 | Code | **Yes** | 程式由 AI 協助撰寫 |
 
 遊戲首頁也有標示：「貓咪插畫、驚喜插畫、貓掌和背景音樂由 AI 生成（Gemini），瓦楞紙花紋之一由 AI 生成（FLUX），也有程式畫的版本」。
+
+AI 揭露的英文說明（itch 頁面用）：
+
+- Graphics: The illustrations of the three cats and the husky, the first-person cat paw, the surprise pictures, the small gifts, the thank-you cards and the back-view stickers were generated with Gemini. One of the cardboard textures was generated with FLUX. Every character and material also has a hand-coded drawn version.
+- Sound: The background music and dance tracks were generated with Gemini. Sound effects (scratching, popping, purring) are synthesized live in code.
+- Text and dialogue: The English translation and some of the writing were done with AI assistance.
+- Code: The code was written with AI assistance.
 
 ## 頁面文案（英文，itch 主要）
 
@@ -100,7 +111,7 @@
 
 - 收錄方式：填遊戲網址（GitHub Pages：https://mochachen1225-create.github.io/scratch-it/），「開始玩」會帶 `?utm_source=9453games.com&utm_medium=referral` 回原站。遊戲不讀網址參數，實測帶參數開啟、玩一局都正常
 - 不用另做上架包
-- 準備：封面（用 itch 那張）、直式截圖 3～5 張（用 itch 的 6 張挑）、一句話介紹＋約 100 字說明：
+- 準備：封面（用 itch 那張）、截圖用中文版前 5 張（`screenshot-zh-1`～`5`：慘狀照、瓦楞紙、泡泡紙、沙發、驚喜插畫）、一句話介紹＋約 100 字說明：
   - 一句話：你就是貓，手指一滑把紙箱抓爛，抓痕就是你的作品。
   - 說明（約 100 字）：療癒解壓的手機小遊戲。選一隻貓，用手指當貓掌，把瓦楞紙撕成一條條、泡泡紙啵啵啵、沙發抓到露出棉花。沒有倒數、不比分數，每張紙下面都藏著驚喜插畫，還能送小禮物給貓、拍一張貓一臉無辜的「慘狀照」。
 
