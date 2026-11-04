@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.7";
+const VERSION = "0.8.8";
 const CHANGES = [
+  "比較慢的手機會自動調低解析度，抓起來更順",
   "慘狀照加上主人的旁白，貓會回嘴",
   "慘狀照變成手機拍下現場的樣子：手機外框、相機畫面、拍照白閃＋喀嚓",
   "慘狀照裡的貓變大了（感謝玩家回報）",
@@ -232,7 +233,8 @@ let texImg = null;
 
 function makeLayer() { const c = document.createElement("canvas"); c.width = cv.width; c.height = cv.height; return c; }
 function setupCanvas() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  // 慢手機：上一局量到太卡，就改用 1.5 倍解析度（畫面幾乎看不出差別，順很多）
+  DPR = Math.min(window.devicePixelRatio || 1, save.lowres ? 1.5 : 2);
   Wd = window.innerWidth; Ht = window.innerHeight;
   cv.width = Math.round(Wd * DPR); cv.height = Math.round(Ht * DPR);
   base = makeLayer(); dmg = makeLayer(); pile = makeLayer();
@@ -940,6 +942,8 @@ function fingerTick(now) {
 function loop(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (!G) return;
+  // 量開局前 120 格的速度：平均慢於 30 格／秒，下一局起改低一點的解析度
+  if (!save.lowres && DPR > 1.5) { G.fq = (G.fq || 0) + 1; G.ft = (G.ft || 0) + dt; if (G.fq === 120 && G.ft / 120 > 1 / 30) { save.lowres = true; persist(); } }
   if (anyDown() && !G.done) {
     if (G.down) fingerTick(now);
     if (G && G.f2.down) withF2(() => fingerTick(now));
