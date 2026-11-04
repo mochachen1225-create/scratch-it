@@ -1,5 +1,5 @@
 # 《抓爛它！》itch 封面兩版（1260×1000＋630×500）：整張是被抓破的瓦楞紙特寫，大字直接壓在紙上
-# A：正中間一道橫向大撕痕，三隻貓從裂縫探頭；B：三道斜斜的大爪痕，貓掌正在撕，貓從爪痕裡探頭
+# 定案 B 版（摩卡與貓貓小隊 11/4 選）：三道斜斜的大爪痕，三隻貓放很大、只從裂縫露出眼睛偷看，右下角貓掌正在撕。version_a 是沒選的橫向撕痕版，留著備用
 import os, math, random
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -64,6 +64,21 @@ def paste_cat(im, name, cx, bottom, h, clip_poly=None, rot=0):
         layer.putalpha(Image.composite(layer.getchannel('A'), Image.new('L', im.size, 0), m))
     im.alpha_composite(layer)
 
+def paste_eyes(im, name, h, fx, fy, tx, ty, deg, clip_poly):
+    c = Image.open(ART + name + '.webp').convert('RGBA'); k = h / c.height
+    c = c.resize((int(c.width * k), int(h)), Image.LANCZOS)
+    # 拿掉貼紙外圈的白邊（不然裂縫邊緣會看到一條白線）
+    er = int(c.height * .028) | 1
+    c.putalpha(c.getchannel('A').filter(ImageFilter.MinFilter(er)).filter(ImageFilter.MinFilter(er)))
+    ex, ey = c.width * fx - c.width / 2, c.height * fy - c.height / 2   # 眼睛相對圖中心
+    r = c.rotate(deg, expand=True, resample=Image.BICUBIC); th = math.radians(deg)
+    nx, ny = ex * math.cos(th) + ey * math.sin(th), -ex * math.sin(th) + ey * math.cos(th)
+    px, py = tx - (r.width / 2 + nx), ty - (r.height / 2 + ny)
+    layer = Image.new('RGBA', im.size, (0, 0, 0, 0)); layer.paste(r, (int(px), int(py)), r)
+    m = Image.new('L', im.size, 0); ImageDraw.Draw(m).polygon(clip_poly, fill=255)
+    layer.putalpha(Image.composite(layer.getchannel('A'), Image.new('L', im.size, 0), m))
+    im.alpha_composite(layer)
+
 def title(im, cy, zh_y=None):
     d = ImageDraw.Draw(im)
     for s, f, y, fill in [("抓爛它！", font(210), cy, (255, 236, 176)), ("Scratch It!", font(108), (zh_y or cy + 225), (255, 255, 255))]:
@@ -111,11 +126,12 @@ def version_b():
         sh = Image.new('RGBA', im.size, (0, 0, 0, 0)); ImageDraw.Draw(sh).polygon([(x + 5, y + 9) for x, y in poly], fill=(0, 0, 0, 110)); im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(8)))
         d = ImageDraw.Draw(im); d.polygon(poly, fill=(64, 40, 20))
         edges(d, top, rnd, True); edges(d, bot, rnd, False)
-    # 貓從三道爪痕探頭
-    for poly, name, h in zip(slashes, ['white_peek', 'orange_peek', 'white_peek'], [0, 0, 0]):
-        pass
-    for poly, (name, cx, by, hh) in zip(slashes, [('orange_sit', 330, 860, 400), ('grey_sit', 640, 720, 400), ('white_sit', 980, 790, 400)]):
-        paste_cat(im, name, cx, by, hh, clip_poly=poly)
+    # 貓放得很大，只從爪痕裂縫露出眼睛到鼻子（像在偷看）；貓頭跟著爪痕斜 22°
+    # (圖、高度、眼睛在圖上的位置 x/y 比例、眼睛要對準爪痕的哪一點 0～1)
+    for poly, (k, name, hh, fx, fy, t) in zip(slashes, [(0, 'orange_sit', 1150, .77, .29, .45), (1, 'grey_sit', 1050, .44, .375, .47), (2, 'white_sit', 980, .62, .41, .40)]):
+        x0, y0 = [(160, 470), (450, 420), (740, 380)][k]
+        tx, ty = x0 + math.cos(.38) * 760 * t, y0 + math.sin(.38) * 760 * t
+        paste_eyes(im, name, hh, fx, fy, tx, ty, -22, poly)
     d = ImageDraw.Draw(im)
     for poly in slashes:   # 重畫毛邊壓在貓上
         n = len(poly) // 2; edges(d, poly[:n], rnd, True); edges(d, poly[n:], rnd, False)
@@ -126,6 +142,6 @@ def version_b():
     return im
 
 os.makedirs(OUT, exist_ok=True)
-for tag, im in [('a', version_a()), ('b', version_b())]:
-    im = im.convert('RGB'); im.save(OUT + f'cover-{tag}.png'); im.resize((630, 500), Image.LANCZOS).save(OUT + f'cover-{tag}-630x500.png')
+for tag, im in [('b', version_b())]:
+    im = im.convert('RGB'); im.save(OUT + 'cover.png'); im.resize((630, 500), Image.LANCZOS).save(OUT + 'cover-630x500.png')   # 定案 B 版
 print('ok')

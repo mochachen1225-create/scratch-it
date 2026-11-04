@@ -106,7 +106,7 @@
 
 ## 宣傳素材（11/7～12 做；上架包 11/14 前放好，11/20 上架）
 
-已完成：`promo/itch/`——中英截圖各 7 張（1080×1350；順序：慘狀照、瓦楞紙、泡泡紙、沙發、驚喜插畫、小弟收禮爆衝、12 月大更新預告）、封面兩版讓摩卡與貓貓小隊挑（cover-a 橫向大撕痕＋三隻貓探頭、cover-b 三道爪痕＋貓掌，各有 1260×1000 和 630×500）。重做：`tools/promo/capture.mjs` 拍遊戲畫面 → `tools/promo/compose.py` 排截圖、`tools/promo/cover.py` 畫封面。試玩影片配樂用〈Kitchen Counter Zoomies〉（摩卡與貓貓小隊確認）
+已完成：`promo/itch/`——中英截圖各 7 張（1080×1350；順序：慘狀照、瓦楞紙、泡泡紙、沙發、驚喜插畫、小弟收禮爆衝、12 月大更新預告）、封面定案（摩卡與貓貓小隊選 B 版：三道爪痕、三隻貓從裂縫露出眼睛偷看、貓掌正在撕；cover.png 1260×1000、cover-630x500.png）。重做：`tools/promo/capture.mjs` 拍遊戲畫面 → `tools/promo/compose.py` 排截圖、`tools/promo/cover.py` 畫封面。試玩影片配樂用〈Kitchen Counter Zoomies〉（摩卡與貓貓小隊確認）
 
 | 項目 | 規格 | 做法 |
 |---|---|---|
