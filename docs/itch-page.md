@@ -64,7 +64,7 @@
 >
 > Use two fingers for two paws. Hold still to stamp paw prints. Leave whenever you've had enough, or scratch the whole sheet clean.
 >
-> Made by Mocha & the Cat Crew. Plays in your phone's browser, saves only on your device.
+> Made by Mocha & the Cat Hero Party. Plays in your phone's browser, saves only on your device.
 
 ## 頁面文案（中文）
 
