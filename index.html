@@ -89,7 +89,7 @@
   .rowflash { position: fixed; left: 0; right: 0; z-index: 24; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255,255,255,.9) 40%, rgba(255,217,106,.9) 60%, transparent);
     background-size: 200% 100%; animation: sweep .7s ease-out forwards; }
   @keyframes sweep { from { background-position: 100% 0; opacity: 1; } to { background-position: -100% 0; opacity: 0; } }
-  body.zoomies .meter { animation: wiggle .18s infinite alternate; } body.zoomies .meter i { background: repeating-linear-gradient(45deg, #ff8a5c 0 6px, #ffb347 6px 12px); }
+  body.zoomies .meter { animation: mglow .35s infinite alternate; } @keyframes mglow { to { box-shadow: 0 0 14px 4px #ffb347; } } body.zoomies .meter i { background: repeating-linear-gradient(45deg, #ff8a5c 0 6px, #ffb347 6px 12px); }
   @keyframes wiggle { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
   /* 跳舞慶祝：同一張坐姿圖，用程式彈跳、擺動、壓扁 */
   #dance { position: fixed; inset: 0; z-index: 85; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
@@ -145,8 +145,6 @@
   .slot.shiny { box-shadow: 0 0 0 2px #fff, 0 0 12px 3px #ffd96a, 2px 2px 0 var(--ink); }
   @keyframes foil { from { background-position: 120% 0; } to { background-position: -120% 0; } }
   .slot em { position: absolute; top: 6px; right: 6px; font-style: normal; font-size: 12px; background: var(--ink); color: #fff; border-radius: 8px; padding: 0 5px; }
-  #cv.shake { animation: shake .5s; }
-  @keyframes shake { 20% { transform: translate(-6px, 2px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-4px, 3px); } 80% { transform: translate(3px, -1px); } }
   /* 好感度 */
   .cats.four { grid-template-columns: repeat(4, 1fr); gap: 6px; } .cats.four .cat svg, .cats.four .catpic { width: 60px; height: 60px; } .cats.four .cat b { font-size: 15px; }
   .hearts { font-style: normal; font-size: 9px; letter-spacing: -1px; line-height: 1.4; } .hearts.big { font-size: 26px; letter-spacing: 0; }
@@ -196,6 +194,8 @@
   .bigscrap { position: fixed; left: 0; top: 0; z-index: 14; width: 46px; height: 16px; border: 2px solid rgba(60,40,20,.5); border-radius: 3px; pointer-events: none; }
   .chaser { position: fixed; left: 0; top: 0; z-index: 14; width: 90px; pointer-events: none; }
   .chaser .chasepic, .chaser svg { width: 90px; height: 90px; object-fit: contain; display: block; }
+  #glow { position: fixed; inset: 0; z-index: 23; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 45%, #fff8e0, rgba(255,217,106,.6)); }
+  #glow.go { animation: glow .38s ease-out; } @keyframes glow { 0% { opacity: var(--k, .4); } 100% { opacity: 0; } }
   #flash { position: fixed; inset: 0; z-index: 95; background: #fff; pointer-events: none; opacity: 0; }
   #flash.go { animation: flash .45s ease-out; }
   @keyframes flash { 0% { opacity: .95; } 100% { opacity: 0; } }
@@ -323,13 +323,14 @@
 <div id="unlockPop" class="overlay" hidden><div class="card"><div id="unlockIc" class="unlock-ic"></div><p id="unlockTxt" style="margin:0;font-size:20px"></p><button id="unlockOk" class="btn" data-t>太好了！</button></div></div>
 <div id="dance" hidden><div class="gift"></div><div class="dancers"></div><p></p><small data-t>點一下繼續</small></div>
 <div id="flash" hidden></div>
+<div id="glow" hidden></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.8.13"></script>
-<script src="js/i18n.en.js?v=0.8.13"></script>
-<script src="js/data.js?v=0.8.13"></script>
-<script src="js/cats.js?v=0.8.13"></script>
-<script src="js/fx.js?v=0.8.13"></script>
-<script src="js/game.js?v=0.8.13"></script>
+<script src="js/i18n.js?v=0.8.14"></script>
+<script src="js/i18n.en.js?v=0.8.14"></script>
+<script src="js/data.js?v=0.8.14"></script>
+<script src="js/cats.js?v=0.8.14"></script>
+<script src="js/fx.js?v=0.8.14"></script>
+<script src="js/game.js?v=0.8.14"></script>
 </body>
 </html>

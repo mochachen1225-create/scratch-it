@@ -1,7 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.13";
+const VERSION = "0.8.14";
 const CHANGES = [
-  "畫面晃動改成只有大場面才晃一下，抓的時候畫面穩定（感謝玩家回報）",
+  "畫面完全不晃了：大場面改成閃一下光、多噴一點碎屑（感謝玩家回報）",
   "修好：剛找到插畫就離開，「找到了」的提示會留到下一局",
   "收禮物的畫面，貓和禮物變大了；首頁的新材質改成「12 月大更新」預告",
   "修好：在沙發上抓久一點會一直冒出肉球印章",
@@ -313,7 +313,7 @@ function startGame() {
     fx: 0, fy: 0, paw: { x: Wd / 2, y: Ht / 2 }, stroke: null, strokes: [], moved: 0, lastT: 0, pawEl: $("#paw"),
     // 第二根手指＝第二隻貓掌（處理時跟上面這組欄位對調）
     f2: { pid: null, down: false, paw: { x: 0, y: 0 }, stroke: null, press: null, fx: 0, fy: 0, lx: 0, ly: 0, jx: 0, jy: 0, lastT: 0, pawEl: $("#paw3") },
-    mvx: 0, mvy: 0, shakeUntil: 0, shakeAmp: 0, hot: new Set(),
+    mvx: 0, mvy: 0, hot: new Set(),
     // 抓到一半貓會分心（追碎片、聽到腳步聲裝沒事），一局一次
     distractAt: rand(7000, 16000), distracted: false, freezeUntil: 0,
     frenzyRun: 0, lastMove: 0, nextBurst: performance.now() + rand(6000, 10000), burstUntil: 0, jx: 0, jy: 0,
@@ -464,9 +464,9 @@ function checkReveal() {
   FX.reveal(cd.rarity); FX.vibrate([20, 40, 20]);
   // 找到了：可以收下就走，也可以繼續抓到全部乾淨
   const db = $("#doneBtn"); db.disabled = false; db.textContent = T("收下，結束 ›"); db.classList.add("take");
-  // 整人卡：噗一聲、畫面抖一下
+  // 整人卡：噗一聲、閃一下
   if (cd.kind === "prank") {
-    setTimeout(() => { FX.pfft(); FX.vibrate([60, 30, 90]); cv.classList.add("shake"); setTimeout(() => cv.classList.remove("shake"), 500); }, 350);
+    setTimeout(() => { FX.pfft(); FX.vibrate([60, 30, 90]); glow(.5); }, 350);
   }
 }
 const SHINY_AT = 3;
@@ -604,7 +604,7 @@ function toughHit(h, k, cx, cy) {
 }
 function huskyRip(x, y) {
   if (performance.now() < G.freezeUntil) return;
-  shake(3, 200); FX.tear(); FX.rip(); FX.vibrate([30, 20, 50]);
+  glow(.45, x, y); FX.tear(); FX.rip(); FX.vibrate([30, 20, 50]);
   if (G.m.mode === "bubble") { for (let a = 0; a < 6.3; a += .35) for (let rr = 0; rr <= 46; rr += 8) popNear(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
   else {
     const h = G.hx, j = Math.round((y - Y0) / ROWH), i = Math.round((x - (OFF && j % 2 ? HEX / 2 : 0)) / HEX);
@@ -662,7 +662,7 @@ function burstPatch(p, chain) {
   const cx = cells.reduce((a, q) => a + q[0], 0) / cells.length, cy = cells.reduce((a, q) => a + q[1], 0) / cells.length;
   track2(cx, cy);
   for (let i = 0; i < 34; i++) spawnDebris(cx + rand(-24, 24), cy + rand(-24, 24), rand(-1, 1), rand(-1, .3));
-  FX.pop(chain); FX.vibrate(12 + chain * 4); if (chain >= 3) shake(2);   // 只有大連鎖才晃
+  FX.pop(chain); FX.vibrate(12 + chain * 4); if (chain >= 3) glow(.35, cx, cy);   // 大連鎖：閃一下、多噴碎屑
   // 哈士奇拆家：碎一塊就順便把旁邊也扯爛，偶爾嗷嗚一聲（一點點中二）
   if (G.catId === "husky" && chain === 0 && Math.random() < .35) setTimeout(() => { if (!G || G.done) return; const q = neighbors(p).find(x => !h.pDone[x] && h.pTotal[x]); if (q !== undefined) burstPatch(q, 1); }, 90);
   if (G.catId === "husky" && Math.random() < .18 && performance.now() - (G.lastHowl || 0) > 4500) {
@@ -724,7 +724,7 @@ function popNear(x, y) {
       if (Math.random() < .05 && performance.now() - (G.lastBigPop || 0) > 2500) {
         G.lastBigPop = performance.now();
         // 驚喜：特別大的一顆
-        FX.bigPop(); FX.vibrate(35); shake(2.5, 180);
+        FX.bigPop(); FX.vibrate(35); glow(.4, q.x, q.y);
         if (performance.now() - (G.lastBig || 0) > 1500) { G.lastBig = performance.now(); bubble(T("啪！"), q.x, q.y - 50); }
       } else { FX.bubblePop(G.catId, G.popSeq); FX.vibrate(6); }
       for (let i = 0; i < 2; i++) spawnDebris(q.x, q.y, rand(-1, 1), -1);
@@ -978,10 +978,7 @@ function loop(now) {
     if (!G.zoom && ((G.frenzyRun >= 4 && coverage() >= G.zoomP * .4) || G.scratchMs > G.zoomAt)) startZoomies(now);
   }
   if (G.zoom === 1 && (now > G.zoomUntil || G.done)) endZoomies();
-  // 畫面晃：暴衝時一直晃；碎掉／裂開時輕輕晃一下（不靠震動也感覺得到）
-  if (G.zoom === 1) cv.style.transform = `translate(${Math.sin(now / 45) * 2.5}px,${Math.cos(now / 61) * 2}px)`;   // 暴衝：規律地震
-  else if (now < G.shakeUntil) { const k = (G.shakeUntil - now) / (G.shakeUntil - G.shakeT0); cv.style.transform = `translate(${Math.sin((now - G.shakeT0) / 28) * G.shakeAmp * k}px,0)`; }
-  else if (cv.style.transform) cv.style.transform = "";
+  // 畫面完全不晃（看了會暈）：大場面改成閃一下光＋多噴碎屑＋音效
   if (now < G.rainUntil) {
     // 抓完：紙屑雨，堆得越來越高
     for (let i = 0; i < 22; i++) { spawnDebris(rand(0, Wd), rand(-40, Ht * .3), rand(-.3, .3), 1, true); const p = G.particles[G.particles.length - 1]; if (p) { p.vy = rand(100, 400); } }
@@ -997,7 +994,7 @@ function loop(now) {
   if (G.m.tough && !G.done) { if (G.down) drawPull(); if (G.f2.down) withF2(drawPull); }
   updateMeter();
   if (!G.done && !G.wipe && G.progress >= 1) {
-    G.clean = true; G.wipe = now; FX.sweep(); shake(3, 300);
+    G.clean = true; G.wipe = now; FX.sweep(); glow(.6);
     bubble(T("抓得一乾二淨！"), Wd / 2 - 80, Ht * .4).classList.add("big");
   }
   if (G.wipe && !G.done) {
@@ -1009,12 +1006,14 @@ function loop(now) {
   }
   raf = requestAnimationFrame(loop);
 }
-// 輕輕晃一下畫面
-// 晃一下：只給大場面（整排清光、大啪、一乾二淨、哈士奇撕一大片、大連鎖），至少隔 1.5 秒，晃法是平順的左右兩下（不是亂抖）
-function shake(amp, ms = 180) {
+// 大場面回饋：整個畫面閃一下暖光（不晃），有位置就在那裡多噴一把碎屑；至少隔 1.5 秒
+function glow(k = .4, x, y) {
+  if (x !== undefined) for (let i = 0; i < 18; i++) spawnDebris(x + rand(-20, 20), y + rand(-20, 20), rand(-1, 1), rand(-1, .2));
   const now = performance.now();
-  if (now - (G.lastShake || -1e9) < 1500) return;
-  G.lastShake = now; G.shakeAmp = amp; G.shakeT0 = now; G.shakeUntil = now + ms;
+  if (now - (G.lastGlow || -1e9) < 1500) return;
+  G.lastGlow = now;
+  const f = $("#glow"); if (!f) return; f.style.setProperty("--k", k); f.hidden = false; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+  clearTimeout(f._t); f._t = setTimeout(() => { f.hidden = true; }, 400);
 }
 // 快破的區塊：紙面微微鼓起（亮邊＋底下陰影，越接近碎越鼓、輕輕起伏）
 function drawHot(now) {
@@ -1113,7 +1112,7 @@ function heartStamp(pr) {
 // 一整排都碎光：像消掉一排一樣大慶祝
 function rowClear(y, hgt) {
   G.rows++;
-  const now = performance.now(); shake(3, 200);
+  const now = performance.now(); glow(.4);
   for (let i = 0; i < 70; i++) G.particles.push({ x: rand(0, Wd), y: y + rand(-hgt / 2, hgt / 2), vx: rand(-120, 120), vy: rand(-520, -200), rot: rand(0, 6.3), vr: rand(-10, 10),
     w: rand(6, 11), h: rand(3, 6), color: ["#ffd96a", "#ffb8c6", "#a9e5c6", "#aed5ff", "#ffffff"][i % 5], floor: Ht - rand(4, G.rainBand) });
   const f = document.createElement("div"); f.className = "rowflash"; f.style.top = (y - hgt / 2) + "px"; f.style.height = hgt + "px";
