@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.10";
+const VERSION = "0.8.11";
 const CHANGES = [
+  "收禮物的畫面，貓和禮物變大了；首頁的新材質改成「12 月大更新」預告",
   "修好：在沙發上抓久一點會一直冒出肉球印章",
   "比較慢的手機會自動調低解析度，抓起來更順",
   "慘狀照加上主人的旁白，貓會回嘴",
@@ -124,7 +125,7 @@ function nextUnlockLine() {
   const m = locked.find(x => x.ready) || locked[0];
   if (!m) return "";
   return m.ready ? T("下一個解鎖：{0} {1}（{2}）", m.icon, W(m.name), progressText(m))
-    : T("下一個材質：{0} {1}・敬請期待（{2}）", m.icon, W(m.name), progressText(m));
+    : T("下一個材質：{0} {1}・12 月大更新", m.icon, W(m.name));
 }
 function unlockText(m) {
   const u = m.unlock; if (!u) return "";
@@ -184,14 +185,15 @@ function renderHome() {
     const open = save.unlocked.includes(m.id);
     const st = unlockState(m);
     const b = document.createElement("button");
-    b.className = "mat" + (open ? (save.mat === m.id ? " on" : "") : " locked");
+    b.className = "mat" + (open ? (save.mat === m.id ? " on" : "") : m.ready ? " locked" : " coming");
     let sub;
-    if (!open && !m.ready) sub = `<div class="cd">${T("敬請期待")}${m.secret ? "" : "・" + unlockText(m)}</div>`;
+    // 還沒做好的材質：當成「12 月大更新」預告（一條緞帶標籤）
+    if (!open && !m.ready) sub = `<div class="soon">${T("🎁 12 月大更新")}</div>`;
     else if (!open) sub = `<div class="cd">🔒 ${unlockText(m)}</div><div class="bar"><i style="width:${clamp(st.frac, 0, 1) * 100}%"></i></div>`;
     else sub = "";
     b.innerHTML = `<span class="ic">${open || !m.secret ? m.icon : "❓"}</span><span><div class="nm">${open || !m.secret ? W(m.name) : "？？？"}</div>${sub}</span>`;
     b.addEventListener("click", () => {
-      if (!open) { toast(m.ready ? T("還沒解鎖：{0}", unlockText(m)) : T("這個材質還在做，敬請期待！")); return; }
+      if (!open) { toast(m.ready ? T("還沒解鎖：{0}", unlockText(m)) : T("12 月大更新就會出現！到時候解鎖條件：{0}", m.secret ? "？？？" : unlockText(m)), 3200); return; }
       save.mat = m.id; persist(); FX.tap(); if (!ART) $("#aiNote").hidden = true;
 // 舊存檔升級：已經達成的條件，打開遊戲就解鎖
 { const fresh = checkUnlocks(); if (fresh.length) { persist(); setTimeout(() => toast(T("解鎖新材質：{0}！", fresh.map(m => W(m.name)).join("、")), 3000), 600); } }
@@ -1517,7 +1519,7 @@ function react(cd, id, fav) {
     await wait(300);
     if (kind === "toss") {
       // 一掌拍飛 → 追過去 → 再拍回來
-      const far = SW - 230;
+      const far = SW - 270;
       await Promise.all([A(cat, [tf(0, 0), tf(10, 0, -14), tf(0, 0)], 260), (async () => { await wait(120); FX.boing(); await A(g, [tf(0, 0), tf(far * .6, -120, 400), tf(far, 0, 720)], 700, "ease-out"); })()]);
       await A(cat, [tf(0, 0), tf(far * .5, -24), tf(far - 20, 0)], 650);
       FX.boing();
@@ -1553,7 +1555,7 @@ function react(cd, id, fav) {
       await Promise.all([A(cat, shake, 1500, "linear"), A(g, gs, 1500, "linear")]);
     } else if (kind === "small") {
       // 慢慢推到桌邊 → 回頭看你一眼 → 推下去
-      const edge = SW - 200;
+      const edge = SW - 250;
       for (const x of [edge * .35, edge * .7, edge]) { await Promise.all([A(cat, [tf(x - edge * .35, 0), tf(x - 20, 0)], 600), A(g, [tf(x - edge * .35, 0), tf(x, 0)], 600)]); FX.tap(); await wait(200); }
       bubbleIn(stage, "……", edge, 170); await A(cat, [tf(edge - 20, 0), tf(edge - 20, -8, 0, 1.08), tf(edge - 20, 0)], 900); await wait(300);
       await A(cat, [tf(edge - 20, 0), tf(edge, 0, 8), tf(edge - 20, 0)], 280);
@@ -1571,7 +1573,7 @@ function react(cd, id, fav) {
     } else {
       // 聞一聞 → 轉身背對你
       // 貓窩是大東西：放在貓旁邊不動，貓走過去聞
-      const nx = Math.max(10, SW - 6 - 170 - 150 + 20);
+      const nx = Math.max(0, SW - 6 - 170 - 200 + 30);
       await A(cat, [tf(0, 0), tf(nx, 0)], 600);
       for (let i = 0; i < 2; i++) { await A(cat, [tf(nx, 0), tf(nx + 10, 6, 6), tf(nx, 0)], 380); }
       await wait(300);
@@ -1601,7 +1603,7 @@ async function kitZoomies(stage, cat, cap, SW) {
   cap.textContent = T("小弟太開心了，開始爆衝！");
   let skip = false; const R = $("#react"), onTap = () => { skip = true; }; R.addEventListener("pointerdown", onTap);
   const from = getComputedStyle(cat).transform; const start = from && from !== "none" ? from : "none";
-  const pts = [[SW - 165, -40, 1], [10, -150, -1], [SW - 160, -210, 1], [30, -80, -1], [SW - 170, -10, 1], [0, 0, -1]];
+  const pts = [[SW - 210, -40, 1], [0, -130, -1], [SW - 205, -180, 1], [20, -70, -1], [SW - 215, -10, 1], [0, 0, -1]];
   let prev = start;
   for (const [x, y, dir] of pts) {
     if (skip) break;

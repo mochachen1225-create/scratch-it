@@ -45,40 +45,62 @@ def phone(shot, width, max_h):
     fr.paste(s, (pad, pad), m)
     return fr
 
+# 順序：慘狀照最好笑放第 1 張；第 6 張是小弟收禮爆衝；第 7 張是 12 月大更新預告
+ORDER = [6, 1, 2, 3, 4, 5]
 COPY = {
- 'zh': [("手指一滑", "就是貓掌", "瓦楞紙沿著紙條撕開"),
-        ("啵啵啵", "停不下來", "泡泡紙越抓越療癒"),
-        ("沙發", "會跟你拼", "抓久了才裂開露出棉花"),
-        ("每張紙下面", "都藏著驚喜", "收集插畫・稀有和閃亮版"),
-        ("送禮物", "貓會真的玩", "拍飛、抱住踢、推下桌"),
-        ("抓完", "拍一張慘狀照", "貓坐旁邊一臉無辜")],
- 'en': [("Your finger", "is a cat paw", "Cardboard tears into long strips"),
-        ("Pop, pop,", "pop, pop", "Bubble wrap you can't stop popping"),
-        ("The sofa", "fights back", "Keep going till the stuffing shows"),
-        ("A surprise", "under every sheet", "Collect rare & shiny pictures"),
-        ("Gifts get real", "cat reactions", "Swat it, kick it, push it off the table"),
-        ("Snap the", "crime scene", "The cat looks totally innocent")]}
-BG = [((255, 226, 170), (255, 196, 170)), ((214, 236, 250), (255, 214, 226)), ((200, 232, 224), (255, 226, 190)),
-      ((255, 232, 160), (255, 200, 200)), ((255, 220, 230), (255, 236, 180)), ((235, 222, 255), (255, 214, 190))]
+ 'zh': {1: ("手指一滑", "就是貓掌", "瓦楞紙沿著紙條撕開"), 2: ("啵啵啵", "停不下來", "泡泡紙越抓越療癒"), 3: ("沙發", "會跟你拼", "抓久了才裂開露出棉花"),
+        4: ("每張紙下面", "都藏著驚喜", "收集插畫・稀有和閃亮版"), 5: ("送禮物", "貓會真的玩", "小弟開心到 Z 字型爆衝"), 6: ("抓完", "拍一張慘狀照", "主人碎碎念，貓一臉無辜")},
+ 'en': {1: ("Your finger", "is a cat paw", "Cardboard tears into long strips"), 2: ("Pop, pop,", "pop, pop", "Bubble wrap you can't stop popping"), 3: ("The sofa", "fights back", "Keep going till the stuffing shows"),
+        4: ("A surprise", "under every sheet", "Collect rare & shiny pictures"), 5: ("Gifts get real", "cat reactions", "Rookie gets the zoomies"), 6: ("Snap the", "crime scene", "The cat looks totally innocent")}}
+SOON = {'zh': ("12 月", "大更新", "即將推出", ["紙箱城堡", "窗簾", "長毛地毯", "衛生紙捲", "聖誕禮物紙箱", "沙發布色和花紋", "柴犬阿柴來玩"]),
+        'en': ("Coming in", "December", "Big update", ["Cardboard castle", "Curtains", "Shaggy rug", "Toilet paper roll", "Christmas gift box", "Sofa colors & patterns", "Shiba comes to play"])}
+BG = {1: ((255, 226, 170), (255, 196, 170)), 2: ((214, 236, 250), (255, 214, 226)), 3: ((200, 232, 224), (255, 226, 190)),
+      4: ((255, 232, 160), (255, 200, 200)), 5: ((255, 220, 230), (255, 236, 180)), 6: ((235, 222, 255), (255, 214, 190)), 7: ((255, 214, 170), (255, 170, 190))}
+EMOJI = None
+def card(img, w, radius=40):
+    k = w / img.width; img = img.resize((w, int(img.height * k)), Image.LANCZOS).convert('RGBA')
+    fr = Image.new('RGBA', (img.width + 32, img.height + 32), (0, 0, 0, 0)); d = ImageDraw.Draw(fr)
+    d.rounded_rectangle([12, 12, img.width + 28, img.height + 28], radius + 8, fill=(0, 0, 0, 60))
+    d.rounded_rectangle([0, 0, img.width + 16, img.height + 16], radius + 8, fill=INK)
+    m = Image.new('L', img.size, 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, img.width, img.height], radius, fill=255)
+    fr.paste(img, (8, 8), m); return fr
 
 for L in ('zh', 'en'):
-    for i, (h1, h2, rb) in enumerate(COPY[L]):
+    for n, src in enumerate(ORDER + [7], 1):
         W0, H0 = 1080, 1350
-        im = grad(W0, H0, *BG[i]).convert('RGBA'); d = ImageDraw.Draw(im)
+        im = grad(W0, H0, *BG[src]).convert('RGBA'); d = ImageDraw.Draw(im)
+        h1, h2, rb = (SOON[L][:3] if src == 7 else COPY[L][src])
         fh = font(104 if L == 'zh' else 92)
         text_c(d, W0 / 2, 60, h1, fh, stroke=3)
         text_c(d, W0 / 2, 60 + fh.size + 18, h2, fh, stroke=3)
         ribbon(im, W0 / 2, 60 + fh.size * 2 + 100, rb, font(46 if L == 'zh' else 40))
         top = 60 + fh.size * 2 + 170
-        shot = D + f's{i + 1}-{L}.png'
-        if i == 5:
-            ph = Image.open(shot).convert('RGBA'); k = min(860 / ph.width, (H0 - top - 20) / ph.height)
+        if src == 7:
+            # 預告清單＋柴犬
+            box = Image.new('RGBA', (W0, H0), (0, 0, 0, 0)); bd = ImageDraw.Draw(box)
+            bd.rounded_rectangle([90, top, W0 - 90, H0 - 70], 50, fill=(255, 250, 242, 235), outline=INK, width=6); im.alpha_composite(box)
+            d = ImageDraw.Draw(im); f2 = font(54 if L == 'zh' else 46)
+            cols = [(255, 184, 198), (174, 213, 255), (169, 229, 198), (255, 217, 106), (255, 160, 120), (200, 180, 255), (255, 200, 140)]
+            for k2, item in enumerate(SOON[L][3]):
+                y = top + 50 + k2 * 112; cy = y + f2.size / 2 + 4
+                d.ellipse([140, cy - 20, 180, cy + 20], fill=cols[k2 % 7], outline=INK, width=4)   # 小肉球圓點
+                for dx, dy in [(-12, -24), (0, -30), (12, -24)]: d.ellipse([160 + dx - 6, cy + dy - 6, 160 + dx + 6, cy + dy + 6], fill=cols[k2 % 7], outline=INK, width=3)
+                d.text((205, y), item, font=f2, fill=INK)
+            sh = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shiba.png')).convert('RGBA'); k = 330 / sh.height
+            sh = sh.resize((int(sh.width * k), 330), Image.LANCZOS); im.alpha_composite(sh, (W0 - sh.width - 110, H0 - sh.height - 90))
+        elif src == 6:
+            ph = Image.open(D + f's6-{L}.png').convert('RGBA'); k = min(860 / ph.width, (H0 - top - 20) / ph.height)
             ph = ph.resize((int(ph.width * k), int(ph.height * k)), Image.LANCZOS)
             im.paste(ph, (int(W0 / 2 - ph.width / 2), top), ph)
+        elif src == 5:
+            # 收禮爆衝：只取舞台那一段放大
+            sc = Image.open(D + f's5-{L}.png').convert('RGB'); y0, y1 = int(sc.height * .30), int(sc.height * .76)
+            cd = card(sc.crop((0, y0, sc.width, y1)), 860)
+            im.paste(cd, (int(W0 / 2 - cd.width / 2), top + 10), cd)
         else:
-            fr = phone(shot, 470, H0 - top + 40)
+            fr = phone(D + f's{src}-{L}.png', 470, H0 - top + 40)
             im.paste(fr, (int(W0 / 2 - fr.width / 2 + 9), top), fr)
-        im.convert('RGB').save(OUT + f'screenshot-{L}-{i + 1}.png')
+        im.convert('RGB').save(OUT + f'screenshot-{L}-{n}.png')
 
 # 封面：抓到一半的瓦楞紙當背景，標題＋三隻貓
 W0, H0 = 1260, 1000

@@ -64,6 +64,9 @@
 >
 > Use two fingers for two paws. Hold still to stamp paw prints. Leave whenever you've had enough, or scratch the whole sheet clean.
 >
+> **Coming in the December update**
+> Cardboard castle, curtains, a shaggy rug, a toilet paper roll, a Christmas gift box, sofa colors and patterns… and a Shiba friend who comes over to play.
+>
 > Made by Mocha & the Cat Hero Party. Plays in your phone's browser, saves only on your device.
 
 ## 頁面文案（中文）
@@ -88,6 +91,9 @@
 >
 > 兩隻手指就是兩隻貓掌；按住不動可以蓋肉球章；找到插畫就能收下離開，也可以抓到一乾二淨。
 >
+> **12 月大更新・即將推出**
+> 紙箱城堡、窗簾、長毛地毯、衛生紙捲、聖誕禮物紙箱、沙發布色和花紋……還有隔壁的柴犬阿柴會來玩。
+>
 > 摩卡與貓貓小隊製作。用手機瀏覽器就能玩，存檔只存在你的手機。
 
 ## 9453（摩卡與貓貓小隊上架當天自己投稿）
@@ -100,7 +106,7 @@
 
 ## 宣傳素材（11/7～12 做；上架包 11/14 前放好，11/20 上架）
 
-已完成：`promo/itch/`——中英截圖各 6 張（1080×1350）、封面（cover.png 1260×1000、cover-630x500.png）。重做：`tools/promo/capture.mjs` 拍遊戲畫面 → `tools/promo/compose.py` 排版。試玩影片配樂用〈Kitchen Counter Zoomies〉（摩卡與貓貓小隊確認）
+已完成：`promo/itch/`——中英截圖各 7 張（1080×1350；順序：慘狀照、瓦楞紙、泡泡紙、沙發、驚喜插畫、小弟收禮爆衝、12 月大更新預告）、封面兩版讓摩卡與貓貓小隊挑（cover-a 橫向大撕痕＋三隻貓探頭、cover-b 三道爪痕＋貓掌，各有 1260×1000 和 630×500）。重做：`tools/promo/capture.mjs` 拍遊戲畫面 → `tools/promo/compose.py` 排截圖、`tools/promo/cover.py` 畫封面。試玩影片配樂用〈Kitchen Counter Zoomies〉（摩卡與貓貓小隊確認）
 
 | 項目 | 規格 | 做法 |
 |---|---|---|

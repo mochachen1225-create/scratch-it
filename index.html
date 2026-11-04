@@ -53,6 +53,8 @@
     display: flex; align-items: center; gap: 8px; min-height: 56px; box-shadow: 2px 2px 0 var(--ink); }
   .mat .ic { font-size: 26px; } .mat .nm { font-size: 16px; font-weight: 700; line-height: 1.15; } .mat .cd { font-size: 12px; color: var(--muted); line-height: 1.2; }
   .mat.on { background: var(--mint); }
+  .mat.coming { background: repeating-linear-gradient(135deg, #fff6e2 0 10px, #fdeccb 10px 20px); cursor: pointer; }
+  .mat.coming .soon { display: inline-block; margin-top: 2px; font-size: 11.5px; font-weight: 700; color: #b0522a; background: #ffe1a6; border: 1.5px solid #b0522a; border-radius: 8px; padding: 0 6px; }
   .mat.locked { opacity: .62; background: #efe6d8; cursor: default; }
   .bar { height: 5px; background: #e1d4c1; border-radius: 3px; margin-top: 3px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--brown); }
   .foot { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 14px; }
@@ -175,14 +177,14 @@
   /* 收到禮物的反應 */
   #react { position: fixed; inset: 0; z-index: 84; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px;
     background: radial-gradient(circle at 50% 40%, #fff7e6, #f6e3c4 75%); }
-  #react .stage { position: relative; width: 100%; max-width: 380px; height: 330px; border-bottom: 4px solid var(--ink); background-size: cover; background-position: center bottom; overflow: hidden; }
+  #react .stage { position: relative; width: 100%; max-width: 380px; height: 380px; border-bottom: 4px solid var(--ink); background-size: cover; background-position: center bottom; overflow: hidden; }
   #react .table { display: none; position: absolute; left: 0; right: 30px; bottom: 0; height: 110px; background: #c9965a; border-top: 4px solid var(--ink); border-right: 4px solid var(--ink); border-radius: 0 10px 0 0; }
   #react .k-small .table { display: block; }
-  #react .rcat { position: absolute; left: 10px; bottom: 0; width: 150px; } #react .k-small .rcat { bottom: 110px; }
-  #react .rcat .rpic, #react .rcat svg { width: 150px; height: 150px; object-fit: contain; display: block; }
-  #react .rgift { position: absolute; left: 140px; bottom: 4px; width: 64px; height: 64px; object-fit: contain; touch-action: none; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.15)); }
+  #react .rcat { position: absolute; left: 6px; bottom: 0; width: 200px; } #react .k-small .rcat { bottom: 110px; }
+  #react .rcat .rpic, #react .rcat svg { width: 200px; height: 200px; object-fit: contain; display: block; }
+  #react .rgift { position: absolute; left: 180px; bottom: 4px; width: 84px; height: 84px; object-fit: contain; touch-action: none; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.15)); }
   #react .k-none .rgift { left: auto; right: 6px; bottom: 0; width: 170px; height: 170px; object-fit: cover; object-position: 50% 62%; border-radius: 16px; border: 3px solid var(--ink); background: #fff3d6; }
-  #react .k-small .rgift { bottom: 114px; } #react .k-kibble .rgift { width: 90px; height: 90px; left: 150px; }
+  #react .k-small .rgift { bottom: 114px; } #react .k-kibble .rgift { width: 110px; height: 110px; left: 190px; }
   #react .k-cattree .rcat { left: 60px; }
   #react p { font-size: 20px; font-weight: 700; text-align: center; margin: 0; min-height: 52px; }
   #react .hint { color: var(--muted); font-size: 14px; } #react .fcount { position: absolute; top: 8px; right: 10px; font-size: 18px; font-weight: 700; }
@@ -323,11 +325,11 @@
 <div id="flash" hidden></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.8.10"></script>
-<script src="js/i18n.en.js?v=0.8.10"></script>
-<script src="js/data.js?v=0.8.10"></script>
-<script src="js/cats.js?v=0.8.10"></script>
-<script src="js/fx.js?v=0.8.10"></script>
-<script src="js/game.js?v=0.8.10"></script>
+<script src="js/i18n.js?v=0.8.11"></script>
+<script src="js/i18n.en.js?v=0.8.11"></script>
+<script src="js/data.js?v=0.8.11"></script>
+<script src="js/cats.js?v=0.8.11"></script>
+<script src="js/fx.js?v=0.8.11"></script>
+<script src="js/game.js?v=0.8.11"></script>
 </body>
 </html>
