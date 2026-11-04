@@ -16,6 +16,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "慘狀照變成手機拍下現場的樣子：手機外框、相機畫面、拍照白閃＋喀嚓": "The aftermath photo now looks like a phone snapshot: phone frame, camera screen, white flash and shutter click",
   "慘狀照裡的貓變大了（感謝玩家回報）": "The cats in the aftermath photo are bigger now (thanks to player feedback)",
   "沙發的慘狀照不會再出現兩張一樣的圖（感謝玩家回報）": "The sofa aftermath photo no longer shows the picture twice (thanks to player feedback)",
   "小弟和哈士奇手感拉開：小弟細碎亂抓、哈士奇一爪撕下一大片（感謝玩家回報）": "Kit and the husky feel different now: Kit makes frantic little scratches, the husky rips off huge chunks (thanks to player feedback)",

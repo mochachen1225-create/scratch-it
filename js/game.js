@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.5";
+const VERSION = "0.8.6";
 const CHANGES = [
+  "慘狀照變成手機拍下現場的樣子：手機外框、相機畫面、拍照白閃＋喀嚓",
   "慘狀照裡的貓變大了（感謝玩家回報）",
   "沙發的慘狀照不會再出現兩張一樣的圖（感謝玩家回報）",
   "小弟和哈士奇手感拉開：小弟細碎亂抓、哈士奇一爪撕下一大片（感謝玩家回報）",
@@ -1761,15 +1762,15 @@ async function buildPhoto(R) {
     x.lineWidth = 8; x.strokeStyle = "#3a2e2a"; x.stroke(back); x.stroke(seat);
     x.strokeStyle = "rgba(58,46,42,.35)"; x.lineWidth = 4; x.beginPath(); x.moveTo(140, 652); x.lineTo(940, 652); x.stroke();
     x.fillStyle = m.base2; for (const ax of [70, 930]) { roundRect(x, ax, 520, 90, 300, 36); x.fill(); x.stroke(); }
-    catX = 10; catS = 480; catY = 1255 - catS;
+    catX = 10; catS = 460; catY = 1050 - catS;
   } else {
     // 貓抓板／泡泡紙：放在地上，稍微斜一點
-    x.save(); x.translate(400, 980); x.rotate(-.05);
+    x.save(); x.translate(400, 900); x.rotate(-.05);
     x.fillStyle = m.mode === "bubble" ? "rgba(150,190,215,.8)" : "#8a6236"; roundRect(x, -300, -170 + 20, 600, 360, 18); x.fill();
     x.save(); roundRect(x, -300, -170, 600, 360, 18); x.clip(); drawSnap(-300, -170, 600, 360); x.restore();
     x.lineWidth = 7; x.strokeStyle = "#3a2e2a"; roundRect(x, -300, -170, 600, 360, 18); x.stroke();
     x.restore();
-    catX = 560; catS = 500; catY = 1255 - catS;
+    catX = 560; catS = 470; catY = 1050 - catS;
   }
   // 碎屑撒滿地
   const col = m.debris === "fluff" ? ["#ffffff", m.fuzz] : m.debris === "plastic" ? ["rgba(255,255,255,.85)", "#cfe6f5"] : [m.base2, m.fuzz, "#c79d66"];
@@ -1787,26 +1788,68 @@ async function buildPhoto(R) {
   if (im) { const k = catS / Math.max(im.width, im.height), h = im.height * k; top = catY + (catS - h); x.drawImage(im, catX, top, im.width * k, h); }
   // 對話框放在角色頭上，不擋到角色
   const line = `${W(CATS[id].name)}：${T(PHOTO_LINE[id] || PHOTO_LINE.orange)}`;
-  x.font = F(40, true); const tw = Math.min(900, x.measureText(line).width + 60), bx = clamp(catX + catS / 2 - tw / 2, 30, W0 - tw - 30), by = Math.max(200, top - 104);
+  x.font = F(40, true); const tw = Math.min(900, x.measureText(line).width + 60), bx = clamp(catX + catS / 2 - tw / 2, 30, W0 - tw - 30), by = Math.max(260, top - 104);
   x.fillStyle = "#fff"; roundRect(x, bx, by, tw, 84, 26); x.fill(); x.lineWidth = 5; x.strokeStyle = "#3a2e2a"; x.stroke();
   x.fillStyle = "#3a2e2a"; x.textAlign = "center"; x.fillText(line, bx + tw / 2, by + 56, tw - 40);
   // 標題和網址
-  x.font = F(62, true); x.fillText(T("📸 慘狀照 No.{0}", info.no), W0 / 2, 110);
+  x.font = F(58, true); x.fillText(T("📸 慘狀照 No.{0}", info.no), W0 / 2, 175);
   x.font = F(34); x.fillStyle = "#6a5a52";
-  x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${T("抓了 {0} 下", info.holes.toLocaleString())}・${T("{0} 秒", info.sec)}${info.clean ? "・" + T("一乾二淨 ✨") : ""}`, W0 / 2, 170);
-  // 網址放在白色小牌子上（不然木地板上看不清楚）
-  x.font = F(30, true); const uw = x.measureText(GAME_URL).width + 50;
-  x.fillStyle = "rgba(255,250,242,.95)"; roundRect(x, W0 / 2 - uw / 2, H0 - 82, uw, 56, 18); x.fill(); x.lineWidth = 3; x.strokeStyle = "#3a2e2a"; x.stroke();
-  x.fillStyle = "#4a7fc0"; x.fillText(GAME_URL, W0 / 2, H0 - 43);
-  const blob = await new Promise(r => c.toBlob(r, "image/png"));
-  return { url: URL.createObjectURL(blob), file: new File([blob], "scratch-it-photo.png", { type: "image/png" }) };
+  x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${T("抓了 {0} 下", info.holes.toLocaleString())}・${T("{0} 秒", info.sec)}${info.clean ? "・" + T("一乾二淨 ✨") : ""}`, W0 / 2, 230);
+  // 主人拿手機拍下現場：外面套手機外框＋相機畫面（時間、REC、對焦框、快門列），存圖存整張
+  return phoneFrame(c, { x: catX - 10, y: top - 10, w: catS + 20, h: 1050 - top + 20 }, F);
 }
+function phoneFrame(scene, focus, F) {
+  const SW = scene.width, SH = scene.height, B = 40, M = 36, W1 = SW + B * 2 + M * 2, H1 = SH + B * 2 + M * 2;
+  const c = document.createElement("canvas"); c.width = W1; c.height = H1; const x = c.getContext("2d");
+  x.fillStyle = "#fdf3e3"; x.fillRect(0, 0, W1, H1);
+  // 手機本體：圓角黑邊＋一點陰影
+  x.save(); x.shadowColor = "rgba(0,0,0,.28)"; x.shadowBlur = 30; x.shadowOffsetY = 12;
+  x.fillStyle = "#1d1b1f"; roundRect(x, M, M, SW + B * 2, SH + B * 2, 110); x.fill(); x.restore();
+  x.strokeStyle = "#4a4650"; x.lineWidth = 4; roundRect(x, M + 3, M + 3, SW + B * 2 - 6, SH + B * 2 - 6, 106); x.stroke();
+  const sx = M + B, sy = M + B;
+  x.save(); roundRect(x, sx, sy, SW, SH, 72); x.clip();
+  x.drawImage(scene, sx, sy);
+  // 相機畫面：上方淡淡的漸層、時間戳記、REC 小紅點、閃光燈
+  const g = x.createLinearGradient(0, sy, 0, sy + 200); g.addColorStop(0, "rgba(0,0,0,.35)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(sx, sy, SW, 200);
+  const d = new Date(), pad = n => String(n).padStart(2, "0"), stamp = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}  ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  x.textAlign = "left"; x.font = F(30, true); x.fillStyle = "#fff"; x.fillText(stamp, sx + 54, sy + 76);
+  x.fillStyle = "#ff3b30"; x.beginPath(); x.arc(sx + SW - 150, sy + 66, 12, 0, Math.PI * 2); x.fill();
+  x.fillStyle = "#fff"; x.fillText("REC", sx + SW - 128, sy + 76);
+  x.font = F(34); x.fillText("⚡", sx + SW - 230, sy + 78);
+  // 對焦框（角落四個括號），框住貓
+  x.strokeStyle = "rgba(255,214,80,.95)"; x.lineWidth = 5; const L = 46, f = focus;
+  for (const [cx, cy, dx, dy] of [[f.x, f.y, 1, 1], [f.x + f.w, f.y, -1, 1], [f.x, f.y + f.h, 1, -1], [f.x + f.w, f.y + f.h, -1, -1]]) {
+    x.beginPath(); x.moveTo(sx + cx + dx * L, sy + cy); x.lineTo(sx + cx, sy + cy); x.lineTo(sx + cx, sy + cy + dy * L); x.stroke();
+  }
+  // 下方快門列：縮圖、快門鈕、翻轉鏡頭
+  const barH = 210, by = sy + SH - barH;
+  x.fillStyle = "rgba(20,18,22,.72)"; x.fillRect(sx, by, SW, barH);
+  x.fillStyle = "#fff"; x.beginPath(); x.arc(sx + SW / 2, by + 92, 58, 0, Math.PI * 2); x.fill();
+  x.strokeStyle = "#fff"; x.lineWidth = 7; x.beginPath(); x.arc(sx + SW / 2, by + 92, 74, 0, Math.PI * 2); x.stroke();
+  x.save(); roundRect(x, sx + 90, by + 50, 86, 86, 14); x.clip(); x.drawImage(scene, sx + 90, by + 50, 86, 86 * SH / SW); x.restore();
+  x.strokeStyle = "#fff"; x.lineWidth = 4; roundRect(x, sx + 90, by + 50, 86, 86, 14); x.stroke();
+  x.fillStyle = "rgba(255,255,255,.22)"; x.beginPath(); x.arc(sx + SW - 133, by + 92, 44, 0, Math.PI * 2); x.fill();
+  x.font = F(44); x.textAlign = "center"; x.fillStyle = "#fff"; x.fillText("⟲", sx + SW - 133, by + 108);
+  // 網址：放在快門列上方的小牌子
+  x.font = F(30, true); const uw = x.measureText(GAME_URL).width + 50;
+  x.fillStyle = "rgba(255,250,242,.95)"; roundRect(x, sx + SW / 2 - uw / 2, by - 72, uw, 56, 18); x.fill(); x.lineWidth = 3; x.strokeStyle = "#3a2e2a"; x.stroke();
+  x.fillStyle = "#4a7fc0"; x.fillText(GAME_URL, sx + SW / 2, by - 33);
+  x.restore();
+  // 動態島＋下方小橫條
+  x.fillStyle = "#0c0b0d"; roundRect(x, M + B + SW / 2 - 130, sy + 22, 260, 66, 33); x.fill();
+  x.fillStyle = "#1d2a3a"; x.beginPath(); x.arc(M + B + SW / 2 + 90, sy + 55, 14, 0, Math.PI * 2); x.fill();
+  x.fillStyle = "rgba(255,255,255,.85)"; roundRect(x, M + B + SW / 2 - 140, sy + SH - 22, 280, 9, 5); x.fill();
+  return new Promise(res => c.toBlob(blob => res({ url: URL.createObjectURL(blob), file: new File([blob], "scratch-it-photo.png", { type: "image/png" }) }), "image/png"));
+}
+
 $("#photoBtn").addEventListener("click", async () => {
   if (!lastRound) return;
   FX.tap(); $("#photoBtn").disabled = true;
   try {
     const ph = await buildPhoto(lastRound); photoFile = ph.file;
     FX.tone(1200, .05, { type: "square", vol: .06 }); FX.burst(.12, 4000, 1500, .3, "highpass");   // 喀嚓
+    const fl = $("#flash"); fl.hidden = false; fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); setTimeout(() => { fl.hidden = true; }, 500);
+    await wait(180);
     $("#viewerImg").src = ph.url; $("#viewerPic").classList.remove("shiny");
     $("#viewerTxt").textContent = T("長按圖片可以存下來");
     $("#photoSave").href = ph.url; $("#viewerActs").hidden = false;
