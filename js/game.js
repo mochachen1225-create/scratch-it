@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.8";
+const VERSION = "0.8.9";
 const CHANGES = [
+  "修好：在沙發上抓久一點會一直冒出肉球印章",
   "比較慢的手機會自動調低解析度，抓起來更順",
   "慘狀照加上主人的旁白，貓會回嘴",
   "慘狀照變成手機拍下現場的樣子：手機外框、相機畫面、拍照白閃＋喀嚓",
@@ -903,7 +904,14 @@ cv.addEventListener("pointerdown", e => {
 cv.addEventListener("pointermove", e => {
   if (!G || G.done) return;
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-  const run = () => { for (const ev of (evs.length ? evs : [e])) { G.fx = ev.clientX; G.fy = ev.clientY; if (!G.m.tough) onMove(ev.clientX, ev.clientY); } };
+  const run = () => {
+    for (const ev of (evs.length ? evs : [e])) {
+      G.fx = ev.clientX; G.fy = ev.clientY;
+      // 手指一移動就不是長按（沙發走的是另一條路，也要在這裡取消，不然邊抓邊蓋印章）
+      if (G.press && !G.press.n && Math.hypot(ev.clientX - G.press.x, ev.clientY - G.press.y) > 12) G.press = null;
+      if (!G.m.tough) onMove(ev.clientX, ev.clientY);
+    }
+  };
   if (e.pointerId === G.pid) run(); else if (e.pointerId === G.f2.pid) withF2(run);
 });
 const lift = e => {

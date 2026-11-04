@@ -16,6 +16,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "修好：在沙發上抓久一點會一直冒出肉球印章": "Fixed: long strokes on the sofa no longer stamp paw prints",
   "比較慢的手機會自動調低解析度，抓起來更順": "Slower phones automatically use a lighter resolution for smoother scratching",
   "慘狀照加上主人的旁白，貓會回嘴": "The aftermath photo now has the owner's narration, and the cat talks back",
   "欸……那是新的耶": "Hey… that was new",
