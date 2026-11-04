@@ -1,5 +1,5 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.9";
+const VERSION = "0.8.10";
 const CHANGES = [
   "修好：在沙發上抓久一點會一直冒出肉球印章",
   "比較慢的手機會自動調低解析度，抓起來更順",
@@ -1481,7 +1481,7 @@ function renderBag() {
 function pickCat(cd) {
   FX.tap();
   $("#pickIc").innerHTML = `<img src="${cardImg(cd.id)}" alt="">`;
-  $("#pickTxt").textContent = T("要把{0}送給誰？", W(cd.name));
+  $("#pickTxt").textContent = T("要把{0}送給誰？", LANG === "en" ? W(cd.name).toLowerCase() : W(cd.name));
   $("#pickCats").innerHTML = MAIN_CATS.map(id => `<button class="cat" data-id="${id}">${catImg(id, "sit", "catpic")}<b>${W(CATS[id].name)}</b><i class="hearts">${"❤️".repeat(hearts(id))}${"🤍".repeat(5 - hearts(id))}</i></button>`).join("");
   $("#pickPop").hidden = false;
   $("#pickCats").onclick = e => { const b = e.target.closest(".cat"); if (!b) return; $("#pickPop").hidden = true; gift(cd, b.dataset.id); };
@@ -1508,7 +1508,8 @@ function react(cd, id, fav) {
   for (const el of [cat, g]) { el.getAnimations().forEach(a => a.cancel()); el.style.transform = ""; el.style.left = ""; el.style.bottom = ""; }
   cap.textContent = ""; R.querySelector(".hint").hidden = true; R.querySelector("#reactOk").hidden = true;
   R.hidden = false;
-  const SW = stage.clientWidth, name = W(cd.name), cname = W(CATS[id].name);
+  // 英文句子中間的禮物名改小寫開頭（"swats the paper ball"）
+  const SW = stage.clientWidth, nm = W(cd.name), name = LANG === "en" ? nm.charAt(0).toLowerCase() + nm.slice(1) : nm, cname = W(CATS[id].name);
   const A = (el, kf, ms, easing = "ease-in-out") => el.animate(kf, { duration: ms, easing, fill: "forwards" }).finished;
   const tf = (x, y, r = 0, s = 1) => ({ transform: `translate(${x}px,${y}px) rotate(${r}deg) scale(${s})` });
   let skip = false;
@@ -1808,7 +1809,7 @@ async function buildPhoto(R, opt = {}) {
   let top = catY;
   if (im) { const k = catS / Math.max(im.width, im.height), h = im.height * k; top = catY + (catS - h); x.drawImage(im, catX, top, im.width * k, h); }
   // 對話框放在角色頭上，不擋到角色（拍照時先只出主人那句，0.5 秒後貓才回嘴）
-  const line = `${W(CATS[id].name)}：${T(PHOTO_LINE[id] || PHOTO_LINE.orange)}`;
+  const line = `${W(CATS[id].name)}${LANG === "en" ? ": " : "："}${T(PHOTO_LINE[id] || PHOTO_LINE.orange)}`;
   if (opt.noCat) x.globalAlpha = 0;
   x.font = F(40, true); const tw = Math.min(900, x.measureText(line).width + 60), bx = clamp(catX + catS / 2 - tw / 2, 30, W0 - tw - 30), by = Math.max(260, top - 104);
   x.fillStyle = "#fff"; roundRect(x, bx, by, tw, 84, 26); x.fill(); x.lineWidth = 5; x.strokeStyle = "#3a2e2a"; x.stroke();
@@ -1908,7 +1909,7 @@ function openAlbum() {
   $("#styles").innerHTML = keys.map(k => `<button class="chip${got[k] ? " on" : ""}" data-k="${k}">${got[k] ? W(ART_STYLES[k]) : "？？？"}</button>`).join("");
   $("#styles").onclick = e => {
     const b = e.target.closest(".chip"); if (!b) return; const k = b.dataset.k; FX.tap();
-    toast(got[k] ? `${W(ART_STYLES[k])}：${T(STYLE_NOTES[k])}` : T("提示：{0}", T(STYLE_HINTS[k])), 3000);
+    toast(got[k] ? `${W(ART_STYLES[k])}${LANG === "en" ? ": " : "："}${T(STYLE_NOTES[k])}` : T("提示：{0}", T(STYLE_HINTS[k])), 3000);
   };
   show("albumScreen");
 }
