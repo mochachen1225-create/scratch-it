@@ -67,7 +67,7 @@ await p.evaluate(() => {
   const c = document.createElement('div'); c.id = 'tcap'; c.className = 'hide'; c.innerHTML = '<span></span>'; document.body.appendChild(c);
   const k = document.createElement('div'); k.id = 'tcard'; document.body.appendChild(k);
   window.cap = t => { const e = document.getElementById('tcap'); if (!t) { e.classList.add('hide'); return; } e.firstChild.textContent = t; e.classList.remove('hide'); };
-  window.claw = (w, src) => { const h = document.querySelector('#tcard h1'); h.insertAdjacentHTML('beforeend', `<span class="claw">${w}</span>`); document.getElementById('tcard').insertAdjacentHTML('beforeend', `<img class="paw" src="${src}">`); };
+  window.tclaw = (w, src) => { const h = document.querySelector('#tcard h1'); h.insertAdjacentHTML('beforeend', `<span class="claw">${w}</span>`); document.getElementById('tcard').insertAdjacentHTML('beforeend', `<img class="paw" src="${src}">`); };
   window.card = (h, p1, p2) => { const e = document.getElementById('tcard'); if (!h) { e.classList.add('hide'); return; } e.innerHTML = `<div class="cats"><img src="art/orange_sit.webp"><img src="art/grey_sit.webp"><img src="art/white_sit.webp"></div><h1>${h}</h1>${p1 ? `<p>${p1}</p>` : ''}${p2 ? `<p><b>${p2}</b></p>` : ''}`; e.classList.remove('hide'); };
 });
 const W = ms => p.waitForTimeout(ms * SLOW);   // 等「遊戲時間」ms
@@ -79,8 +79,8 @@ const play = async (mat, cat, card) => {
   await p.evaluate(([m, c, cd]) => { save.mat = m; save.cat = c; if (cd) window.pickCard = () => CARDS.find(x => x.id === cd); startGame(); G.distracted = true; G.zoomAt = Infinity; G.zoomP = 9; G.nextBurst = Infinity; }, [mat, cat, card]);
 };
 // 片頭
-await p.evaluate(t => card(t[0], t[1]), [CAP.t1, CAP.t2]); await W(300); rec = true; shooting = shootLoop();
-await W(900); await p.evaluate(w => claw(w, 'art/orange_paw_out.webp'), CAP.t1b); await W(1700);
+await p.evaluate(t => { card(t[0], t[1]); document.querySelector('#tcard h1').style.fontSize = '50px'; }, [CAP.t1, CAP.t2]); await W(300); rec = true; shooting = shootLoop();
+await W(900); await p.evaluate(w => tclaw(w, 'art/orange_paw_out.webp'), CAP.t1b); await W(1700);
 // 1 瓦楞紙（總編）
 await play('cardboard', 'orange', 'chief_treat'); await p.evaluate(() => card()); await p.evaluate(t => cap(t), CAP.c1);
 for (const y of [190, 226, 262, 400, 436, 472]) await sweep(y);
