@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.6";
+const VERSION = "0.8.7";
 const CHANGES = [
+  "慘狀照加上主人的旁白，貓會回嘴",
   "慘狀照變成手機拍下現場的樣子：手機外框、相機畫面、拍照白閃＋喀嚓",
   "慘狀照裡的貓變大了（感謝玩家回報）",
   "沙發的慘狀照不會再出現兩張一樣的圖（感謝玩家回報）",
@@ -1218,7 +1219,7 @@ function finish() {
   save.maxHoles = Math.max(save.maxHoles, G.holes);
   save.totalHoles += G.holes;
   const info = { cat: G.catId, mat: G.m.id, sec, style: artStyle(sec, !!G.pressedDone), no: save.no, holes: G.holes, chain: G.bestChain || 0, zoom: G.zoom ? 1 : 0, rows: G.rows, stamps: G.stamps,
-    card: G.card ? G.card.id : null, found: G.found, clean: !!G.clean };
+    card: G.card ? G.card.id : null, found: G.found, clean: !!G.clean, cov: coverage() };
   if (G.clean) save.cleans = (save.cleans || 0) + 1;
   // 刮刮卡：找到就收進收集冊，寶物放進寶物袋
   let firstFind = false, complete = false;
@@ -1729,7 +1730,15 @@ $("#shareBtn").addEventListener("click", async () => {
 /* ================= 慘狀照：拉遠看整個現場，貓坐旁邊一臉無辜 ================= */
 let lastRound = null, photoFile = null;
 const PHOTO_LINE = { orange: "我只是在檢查品質。", grey: "這是設計。", white: "不是我！（嘴邊還有紙屑）", husky: "……不是我拆的。" };
-async function buildPhoto(R) {
+// 主人旁白（像影片字幕）：依抓爛程度隨機；哈士奇有專用台詞
+const OWNER_LINE = { low: ["欸……那是新的耶", "還好還好"], mid: ["啊啊啊我的{0}", "誰叫你抓這裡的"], high: ["天啊……", "我要報警了", "這要怎麼跟家人解釋"], husky: ["你是來拆家的嗎"] };
+const OWNER_NOUN = { cardboard: "貓抓板", sofa: "沙發", bubble: "泡泡紙" };
+function ownerLine(info) {
+  const lv = info.cat === "husky" ? "husky" : info.clean || info.cov >= .55 ? "high" : info.cov >= .28 ? "mid" : "low";
+  const pool = OWNER_LINE[lv], t = pool[Math.floor(Math.random() * pool.length)];
+  return T(t, T(OWNER_NOUN[info.mat] || "東西"));
+}
+async function buildPhoto(R, opt = {}) {
   const W0 = 1080, H0 = 1350, c = document.createElement("canvas"); c.width = W0; c.height = H0;
   const x = c.getContext("2d"), m = R.m, info = R.info;
   const F = (n, b) => `${b ? "bold " : ""}${n}px Huninn, "PingFang TC", "Noto Sans TC", sans-serif`;
@@ -1786,19 +1795,21 @@ async function buildPhoto(R) {
   // 角色放大（約畫面高度的 1/3～2/5），站在碎屑堆前面
   let top = catY;
   if (im) { const k = catS / Math.max(im.width, im.height), h = im.height * k; top = catY + (catS - h); x.drawImage(im, catX, top, im.width * k, h); }
-  // 對話框放在角色頭上，不擋到角色
+  // 對話框放在角色頭上，不擋到角色（拍照時先只出主人那句，0.5 秒後貓才回嘴）
   const line = `${W(CATS[id].name)}：${T(PHOTO_LINE[id] || PHOTO_LINE.orange)}`;
+  if (opt.noCat) x.globalAlpha = 0;
   x.font = F(40, true); const tw = Math.min(900, x.measureText(line).width + 60), bx = clamp(catX + catS / 2 - tw / 2, 30, W0 - tw - 30), by = Math.max(260, top - 104);
   x.fillStyle = "#fff"; roundRect(x, bx, by, tw, 84, 26); x.fill(); x.lineWidth = 5; x.strokeStyle = "#3a2e2a"; x.stroke();
   x.fillStyle = "#3a2e2a"; x.textAlign = "center"; x.fillText(line, bx + tw / 2, by + 56, tw - 40);
+  x.globalAlpha = 1;
   // 標題和網址
   x.font = F(58, true); x.fillText(T("📸 慘狀照 No.{0}", info.no), W0 / 2, 175);
   x.font = F(34); x.fillStyle = "#6a5a52";
   x.fillText(`${matById(info.mat).icon} ${W(matById(info.mat).name)}・${T("抓了 {0} 下", info.holes.toLocaleString())}・${T("{0} 秒", info.sec)}${info.clean ? "・" + T("一乾二淨 ✨") : ""}`, W0 / 2, 230);
   // 主人拿手機拍下現場：外面套手機外框＋相機畫面（時間、REC、對焦框、快門列），存圖存整張
-  return phoneFrame(c, { x: catX - 10, y: top - 10, w: catS + 20, h: 1050 - top + 20 }, F);
+  return phoneFrame(c, { x: catX - 10, y: top - 10, w: catS + 20, h: 1050 - top + 20 }, F, opt.owner);
 }
-function phoneFrame(scene, focus, F) {
+function phoneFrame(scene, focus, F, owner) {
   const SW = scene.width, SH = scene.height, B = 40, M = 36, W1 = SW + B * 2 + M * 2, H1 = SH + B * 2 + M * 2;
   const c = document.createElement("canvas"); c.width = W1; c.height = H1; const x = c.getContext("2d");
   x.fillStyle = "#fdf3e3"; x.fillRect(0, 0, W1, H1);
@@ -1830,10 +1841,15 @@ function phoneFrame(scene, focus, F) {
   x.strokeStyle = "#fff"; x.lineWidth = 4; roundRect(x, sx + 90, by + 50, 86, 86, 14); x.stroke();
   x.fillStyle = "rgba(255,255,255,.22)"; x.beginPath(); x.arc(sx + SW - 133, by + 92, 44, 0, Math.PI * 2); x.fill();
   x.font = F(44); x.textAlign = "center"; x.fillStyle = "#fff"; x.fillText("⟲", sx + SW - 133, by + 108);
-  // 網址：放在快門列上方的小牌子
-  x.font = F(30, true); const uw = x.measureText(GAME_URL).width + 50;
-  x.fillStyle = "rgba(255,250,242,.95)"; roundRect(x, sx + SW / 2 - uw / 2, by - 72, uw, 56, 18); x.fill(); x.lineWidth = 3; x.strokeStyle = "#3a2e2a"; x.stroke();
-  x.fillStyle = "#4a7fc0"; x.fillText(GAME_URL, sx + SW / 2, by - 33);
+  // 主人旁白：快門列上方，像影片字幕（半透明黑底＋白字黑描邊）
+  if (owner) {
+    x.font = F(46, true); const ow = x.measureText(owner).width + 70;
+    x.fillStyle = "rgba(0,0,0,.45)"; roundRect(x, sx + SW / 2 - ow / 2, by - 96, ow, 74, 16); x.fill();
+    x.lineJoin = "round"; x.lineWidth = 7; x.strokeStyle = "#1b1416"; x.strokeText(owner, sx + SW / 2, by - 44);
+    x.fillStyle = "#fff"; x.fillText(owner, sx + SW / 2, by - 44);
+  }
+  // 網址：放在快門列最下面（白色小字）
+  x.font = F(24, true); x.fillStyle = "rgba(255,255,255,.9)"; x.fillText(GAME_URL, sx + SW / 2, by + barH - 22);
   x.restore();
   // 動態島＋下方小橫條
   x.fillStyle = "#0c0b0d"; roundRect(x, M + B + SW / 2 - 130, sy + 22, 260, 66, 33); x.fill();
@@ -1846,11 +1862,14 @@ $("#photoBtn").addEventListener("click", async () => {
   if (!lastRound) return;
   FX.tap(); $("#photoBtn").disabled = true;
   try {
-    const ph = await buildPhoto(lastRound); photoFile = ph.file;
+    // 先出主人那句，0.5 秒後貓回嘴；存圖兩句都在
+    const owner = ownerLine(lastRound.info);
+    const [first, ph] = await Promise.all([buildPhoto(lastRound, { owner, noCat: true }), buildPhoto(lastRound, { owner })]); photoFile = ph.file;
     FX.tone(1200, .05, { type: "square", vol: .06 }); FX.burst(.12, 4000, 1500, .3, "highpass");   // 喀嚓
     const fl = $("#flash"); fl.hidden = false; fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go"); setTimeout(() => { fl.hidden = true; }, 500);
     await wait(180);
-    $("#viewerImg").src = ph.url; $("#viewerPic").classList.remove("shiny");
+    $("#viewerImg").src = first.url; $("#viewerPic").classList.remove("shiny");
+    setTimeout(() => { if (!$("#viewer").hidden) { $("#viewerImg").src = ph.url; FX.tap(); } }, 500);
     $("#viewerTxt").textContent = T("長按圖片可以存下來");
     $("#photoSave").href = ph.url; $("#viewerActs").hidden = false;
     openViewer().then(() => { $("#viewerActs").hidden = true; });
