@@ -16,6 +16,7 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "畫面晃動改成只有大場面才晃一下，抓的時候畫面穩定（感謝玩家回報）": "The screen now only shakes for big moments, so it stays steady while you scratch (thanks to player feedback)",
   "修好：剛找到插畫就離開，「找到了」的提示會留到下一局": "Fixed: the \"found it\" banner no longer carries over into the next round",
   "🎁 12 月大更新": "🎁 December update",
   "12 月大更新就會出現！到時候解鎖條件：{0}": "Coming in the December update! Unlock: {0}",
