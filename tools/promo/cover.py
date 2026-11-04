@@ -137,7 +137,7 @@ def version_b():
         n = len(poly) // 2; edges(d, poly[:n], rnd, True); edges(d, poly[n:], rnd, False)
     # 貓掌正在撕（右下角）
     paw = Image.open(ART + 'orange_paw_out.webp').convert('RGBA'); k = 330 / paw.height; paw = paw.resize((int(paw.width * k), 330), Image.LANCZOS).rotate(28, expand=True, resample=Image.BICUBIC)
-    im.alpha_composite(paw, (W0 - paw.width - 30, H0 - paw.height + 40))
+    im.alpha_composite(paw, (W0 - paw.width + 30, H0 - paw.height + 110))   # 往右下，不蓋到小弟的臉
     title(im, 60, zh_y=275); scraps(im, rnd, 55, (0, 360, W0, H0))
     return im
 
