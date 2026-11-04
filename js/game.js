@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.11";
+const VERSION = "0.8.12";
 const CHANGES = [
+  "修好：剛找到插畫就離開，「找到了」的提示會留到下一局",
   "收禮物的畫面，貓和禮物變大了；首頁的新材質改成「12 月大更新」預告",
   "修好：在沙發上抓久一點會一直冒出肉球印章",
   "比較慢的手機會自動調低解析度，抓起來更順",
@@ -303,7 +304,7 @@ function roundRect(c, x, y, w, h, r) {
 /* ================= 開始一局 ================= */
 function startGame() {
   const cat = CATS[save.cat], m = matById(save.mat);
-  show("play"); $("#peek").hidden = true; $("#paw3").hidden = true;
+  show("play"); $("#peek").hidden = true; $("#paw3").hidden = true; $("#reveal").hidden = true;   // 上一局「找到了」的提示不要帶到這一局
   setupCanvas();
   G = {
     catId: save.cat, cat, m, holes: 0, bursts: 0, rainUntil: 0, rainBand: 46,
