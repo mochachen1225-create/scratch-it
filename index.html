@@ -35,6 +35,7 @@
   .row2 { display: flex; gap: 10px; width: 100%; max-width: 340px; } .row2 .btn { font-size: 18px; padding: 12px 6px; }
   .linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: 15px; cursor: pointer; padding: 4px; }
   .small { font-size: 14px; color: var(--muted); margin: 0; text-align: center; }
+  a.other { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; display: inline-block; padding: 8px 6px; }
   .label { font-size: 15px; color: var(--muted); align-self: flex-start; margin: 4px 0 -6px 4px; }
   .mute { position: fixed; z-index: 60; top: max(10px, env(safe-area-inset-top)); right: 10px; width: 44px; height: 44px; border-radius: 50%;
     font-size: 20px; border: 2.5px solid var(--ink); background: var(--sheet); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; padding: 0; }
@@ -288,6 +289,7 @@
     <button id="albumBtn2" class="btn btn-ghost" data-t>🖼️ 作品集</button>
   </div>
   <button id="bookBtn2" class="btn btn-ghost"></button>
+  <p class="small"><a id="otherLink" class="other" href="https://mochachen1225-create.github.io/isekai/" target="_blank" rel="noopener" data-t>🐾 貓貓小隊的其他作品</a></p>
 </section>
 
 <!-- 作品集 -->
@@ -326,11 +328,11 @@
 <div id="glow" hidden></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=0.8.14"></script>
-<script src="js/i18n.en.js?v=0.8.14"></script>
-<script src="js/data.js?v=0.8.14"></script>
-<script src="js/cats.js?v=0.8.14"></script>
-<script src="js/fx.js?v=0.8.14"></script>
-<script src="js/game.js?v=0.8.14"></script>
+<script src="js/i18n.js?v=0.8.15"></script>
+<script src="js/i18n.en.js?v=0.8.15"></script>
+<script src="js/data.js?v=0.8.15"></script>
+<script src="js/cats.js?v=0.8.15"></script>
+<script src="js/fx.js?v=0.8.15"></script>
+<script src="js/game.js?v=0.8.15"></script>
 </body>
 </html>

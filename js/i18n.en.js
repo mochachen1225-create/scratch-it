@@ -16,6 +16,8 @@ I18N.en = {
   "加上背景音樂和插畫版貓掌": "Added background music and illustrated paws",
   "第一版：三隻貓、瓦楞紙和沙發、爪痕畫、收藏冊": "First version: three cats, cardboard and sofa, scratch paintings, gallery",
   "敬請期待": "Coming soon",
+  "結束畫面加了「貓貓小隊的其他作品」連結": "Added a \"More from the Cat Hero Party\" link on the end screen",
+  "🐾 貓貓小隊的其他作品": "🐾 More from the Cat Hero Party",
   "畫面完全不晃了：大場面改成閃一下光、多噴一點碎屑（感謝玩家回報）": "The screen never shakes now: big moments get a quick flash of light and extra debris instead (thanks to player feedback)",
   "畫面晃動改成只有大場面才晃一下，抓的時候畫面穩定（感謝玩家回報）": "The screen now only shakes for big moments, so it stays steady while you scratch (thanks to player feedback)",
   "修好：剛找到插畫就離開，「找到了」的提示會留到下一局": "Fixed: the \"found it\" banner no longer carries over into the next round",

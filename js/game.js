@@ -1,6 +1,7 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.14";
+const VERSION = "0.8.15";
 const CHANGES = [
+  "結束畫面加了「貓貓小隊的其他作品」連結",
   "畫面完全不晃了：大場面改成閃一下光、多噴一點碎屑（感謝玩家回報）",
   "修好：剛找到插畫就離開，「找到了」的提示會留到下一局",
   "收禮物的畫面，貓和禮物變大了；首頁的新材質改成「12 月大更新」預告",
@@ -71,6 +72,15 @@ function toast(msg, ms = 2400) {
 applyStatic();
 if (LANG === "en") document.title = "Scratch It!";
 
+/* ================= 匿名計數 ================= */
+// GoatCounter：只記三個按鈕被按了幾次（再抓一張、拍慘狀照、其他作品），不用 cookie、不記個人資料、不送存檔
+// 用一張 1×1 圖片送出，沒網路或被擋就靜靜略過；本機測試（非 https）不送
+function gcEvent(name) {
+  try {
+    if (location.protocol !== "https:") return;
+    new Image().src = "https://catheroparty.goatcounter.com/count?e=true&p=" + encodeURIComponent(name) + "&t=" + encodeURIComponent(name) + "&rnd=" + Math.random().toString(36).slice(2);
+  } catch (e) {}
+}
 /* ================= 存檔（只存在這支手機） ================= */
 const SAVE_KEY = "scratch-it-save";
 const save = Object.assign({ paintings: 0, time: 0, cats: [], maxHoles: 0, totalHoles: 0, frenzy: 0, tex: "code", unlocked: ["cardboard"], album: [], cat: "orange", mat: "cardboard", no: 0, muted: false, found: {}, bag: {}, reward: false, love: {}, backs: {}, husky: false },
@@ -217,7 +227,8 @@ $("#albumBtn").addEventListener("click", () => { FX.tap(); openAlbum(); });
 $("#albumBtn2").addEventListener("click", () => { FX.tap(); openAlbum(); });
 $("#albumBack").addEventListener("click", () => { FX.tap(); show("home"); renderHome(); });
 $("#homeBtn").addEventListener("click", () => { FX.tap(); show("home"); renderHome(); });
-$("#againBtn").addEventListener("click", () => { FX.tap(); startGame(); });
+$("#againBtn").addEventListener("click", () => { FX.tap(); gcEvent("scratch-replay"); startGame(); });
+$("#otherLink").addEventListener("click", () => gcEvent("scratch-other"));
 // 瓦楞紙花紋：輪流（每張畫換一種，避免膩）→ 只用程式畫 → 只用 FLUX 圖
 const TEX_NAME = { mix: "輪流", code: "花紋 A（程式畫）", flux: "花紋 B（AI 圖）" };
 // 舊存檔的預設是 code（不是玩家選的），升級時改成輪流
@@ -1879,7 +1890,7 @@ function phoneFrame(scene, focus, F, owner) {
 
 $("#photoBtn").addEventListener("click", async () => {
   if (!lastRound) return;
-  FX.tap(); $("#photoBtn").disabled = true;
+  FX.tap(); gcEvent("scratch-photo"); $("#photoBtn").disabled = true;
   try {
     // 先出主人那句，0.5 秒後貓回嘴；存圖兩句都在
     const owner = ownerLine(lastRound.info);
