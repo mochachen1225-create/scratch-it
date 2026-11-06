@@ -1,5 +1,5 @@
 // 《抓爛它！》遊戲流程與畫面
-const VERSION = "0.8.15";
+const VERSION = "0.8.16";
 const CHANGES = [
   "結束畫面加了「貓貓小隊的其他作品」連結",
   "畫面完全不晃了：大場面改成閃一下光、多噴一點碎屑（感謝玩家回報）",
@@ -73,7 +73,7 @@ applyStatic();
 if (LANG === "en") document.title = "Scratch It!";
 
 /* ================= 匿名計數 ================= */
-// GoatCounter：只記三個按鈕被按了幾次（再抓一張、拍慘狀照、其他作品），不用 cookie、不記個人資料、不送存檔
+// GoatCounter：只記次數（每局結束、再抓一張、拍慘狀照、其他作品），不用 cookie、不記個人資料、不送存檔
 // 用一張 1×1 圖片送出，沒網路或被擋就靜靜略過；本機測試（非 https）不送
 function gcEvent(name) {
   try {
@@ -1267,7 +1267,7 @@ function finish() {
   g.tDive = setTimeout(diveIn, 1100);
   g.toCard = async () => {
     if (!G || G !== g || g.cardShown) return;
-    g.cardShown = true; clearTimeout(g.tDive); clearTimeout(g.tCard);
+    g.cardShown = true; clearTimeout(g.tDive); clearTimeout(g.tCard); gcEvent("scratch-end");
     const card = await buildCard(info);
     cancelAnimationFrame(raf); FX.stop();
     show("cardScreen");

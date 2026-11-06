@@ -33,7 +33,7 @@
    - 勾 **Fullscreen button**
    - 不勾 Automatically start on page load（讓玩家點了才開始，iPhone 的聲音才會解鎖）
 4. 在 itch.io、itch.zone 上遊戲預設是英文，玩家可以在首頁切換中文
-5. 存檔只存在你的手機。只用 GoatCounter 匿名記錄按鈕次數（不用 cookie、不記個人資料）。事件：`scratch-replay`（再抓一張）、`scratch-photo`（拍慘狀照）、`scratch-other`（其他作品連結），站點 catheroparty.goatcounter.com；itch 的 iframe 裡也會記（直接送計數，沒網路或被擋就略過）
+5. 存檔只存在你的手機。只用 GoatCounter 匿名記錄按鈕次數（不用 cookie、不記個人資料）。事件：`scratch-end`（每局結束、出現結束畫面）、`scratch-replay`（再抓一張）、`scratch-photo`（拍慘狀照）、`scratch-other`（其他作品連結），站點 catheroparty.goatcounter.com；itch 的 iframe 裡也會記（直接送計數，沒網路或被擋就略過）
 
 ## AI 揭露（Edit game → AI disclosure，照實勾）
 

@@ -19,4 +19,4 @@
 ## 程式注意事項
 - 翻譯函式叫 `T()`、`W()`：不要再宣告叫 `T` 或 `W` 的變數
 - 所有 localStorage 讀寫都包 try/catch（用 `store.get/set`）；收藏冊存不下時丟最舊的
-- 這個遊戲不加後端；唯一的連網是 GoatCounter 匿名事件計數（`gcEvent()`：scratch-replay／scratch-photo／scratch-other，不用 cookie、不記個人資料、失敗靜默略過），要加新事件先跟總編確認
+- 這個遊戲不加後端；唯一的連網是 GoatCounter 匿名事件計數（`gcEvent()`：scratch-end／scratch-replay／scratch-photo／scratch-other，不用 cookie、不記個人資料、失敗靜默略過），要加新事件先跟總編確認
