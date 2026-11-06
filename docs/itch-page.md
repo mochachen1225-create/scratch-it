@@ -33,7 +33,7 @@
    - 勾 **Fullscreen button**
    - 不勾 Automatically start on page load（讓玩家點了才開始，iPhone 的聲音才會解鎖）
 4. 在 itch.io、itch.zone 上遊戲預設是英文，玩家可以在首頁切換中文
-5. 存檔只存在玩家自己的瀏覽器（localStorage），不連網、不收集任何資料
+5. 存檔只存在你的手機。只用 GoatCounter 匿名記錄按鈕次數（不用 cookie、不記個人資料）。事件：`scratch-replay`（再抓一張）、`scratch-photo`（拍慘狀照）、`scratch-other`（其他作品連結），站點 catheroparty.goatcounter.com；itch 的 iframe 裡也會記（直接送計數，沒網路或被擋就略過）
 
 ## AI 揭露（Edit game → AI disclosure，照實勾）
 
@@ -78,7 +78,7 @@ AI 揭露的英文說明（itch 頁面用）：
 > **Coming in the December update**
 > Cardboard castle, curtains, a shaggy rug, a toilet paper roll, a Christmas gift box, sofa colors and patterns… and a Shiba friend who comes over to play.
 >
-> Made by Mocha & the Cat Hero Party. Plays in your phone's browser, saves only on your device.
+> Made by Mocha & the Cat Hero Party. Plays in your phone's browser. Your progress is saved only on your phone. We use GoatCounter only to anonymously count button presses (no cookies, no personal data).
 
 ## 頁面文案（中文）
 
@@ -105,7 +105,7 @@ AI 揭露的英文說明（itch 頁面用）：
 > **12 月大更新・即將推出**
 > 紙箱城堡、窗簾、長毛地毯、衛生紙捲、聖誕禮物紙箱、沙發布色和花紋……還有隔壁的柴犬阿柴會來玩。
 >
-> 摩卡與貓貓小隊製作。用手機瀏覽器就能玩，存檔只存在你的手機。
+> 摩卡與貓貓小隊製作。用手機瀏覽器就能玩。存檔只存在你的手機。只用 GoatCounter 匿名記錄按鈕次數（不用 cookie、不記個人資料）。
 
 ## 9453（摩卡與貓貓小隊上架當天自己投稿）
 
